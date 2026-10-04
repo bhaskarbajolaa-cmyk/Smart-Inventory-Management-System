@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1110.572 1093.1" width="1110.572" height="1093.1" style="--bg:#1F1F1F;--fg:#CCCCCC;--line:#CCCCCC;--accent:#0078D4;--muted:#CCCCCCCC;--surface:#181818;--border:#CCCCCC;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="Root" data-to="Inv" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="119.741,639.675 167.74099999999999,639.675" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Inv" data-to="P" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="283.05,639.675 301.05,639.675 301.05,123.35 319.05000000000007,123.35" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Inv" data-to="Cat" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="283.05,639.675 301.05,639.675 301.05,512.7499999999999 319.05,512.7499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Inv" data-to="Tx" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="283.05,639.675 301.05,639.675 301.05,594.55 319.05000000000007,594.55" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Inv" data-to="AC" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="283.05,639.675 301.05,639.675 301.05,684.8 319.05000000000007,684.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Inv" data-to="Au" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="283.05,639.675 301.05,639.675 301.05,803.2749999999999 319.05,803.2749999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Inv" data-to="Conc" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="283.05,639.675 301.05,639.675 301.05,969.7499999999999 319.05000000000007,969.7499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P" data-to="P1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="449.1790000000001,123.35 470.2510000000001,123.35 470.2510000000001,58.45 491.3230000000001,58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P1" data-to="C1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="622.934,58.45 657.236,58.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P" data-to="P2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="449.1790000000001,123.35 470.2510000000001,123.35 470.2510000000001,123.35 491.3230000000001,123.35" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P2" data-to="C2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="630.344,123.35 657.236,123.35" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="P" data-to="PR" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="449.1790000000001,123.35 470.2510000000001,123.35 470.2510000000001,318.04999999999995 491.3230000000001,318.04999999999995" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR" data-to="PR1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="622.9340000000001,318.04999999999995 640.085,318.04999999999995 640.085,188.25 657.236,188.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR1" data-to="C3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="787.3650000000001,188.25 793.509,188.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR" data-to="PR2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="622.9340000000001,318.04999999999995 640.085,318.04999999999995 640.085,253.14999999999998 657.236,253.14999999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR2" data-to="C4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="790.3290000000001,253.14999999999998 793.509,253.14999999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR" data-to="PR3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="622.9340000000001,318.04999999999995 640.085,318.04999999999995 640.085,318.04999999999995 657.236,318.04999999999995" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR3" data-to="C5" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="808.1129999999999,318.04999999999995 839.6669999999999,318.04999999999995" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR" data-to="PR4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="622.9340000000001,318.04999999999995 640.085,318.04999999999995 640.085,382.94999999999993 657.236,382.94999999999993" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR4" data-to="C6" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="765.1349999999999,382.94999999999993 793.509,382.94999999999993" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR" data-to="PR5" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="622.9340000000001,318.04999999999995 640.085,318.04999999999995 640.085,447.8499999999999 657.236,447.8499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="PR5" data-to="C7" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="769.581,447.8499999999999 793.509,447.8499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Cat" data-to="CatF" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="421.021,512.7499999999999 491.3230000000001,512.7499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CatF" data-to="C8" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="609.5960000000002,512.7499999999999 657.236,512.7499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Tx" data-to="TxF" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="452.1430000000001,594.55 491.3230000000001,594.55" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="TxF" data-to="C9" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="609.5960000000002,594.55 657.236,594.5499999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="AC" data-to="ACF" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="471.4090000000001,684.8 491.3230000000001,684.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="ACF" data-to="C10" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="609.596,684.8 657.236,684.7999999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Au" data-to="AuF1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="403.237,803.2749999999999 447.2800000000001,803.2749999999999 447.2800000000001,766.5999999999999 491.3230000000001,766.5999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="AuF1" data-to="C11" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="609.596,766.5999999999999 657.236,766.5999999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Au" data-to="AuF2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="403.237,803.2749999999999 447.2800000000001,803.2749999999999 447.2800000000001,839.9499999999998 491.3230000000001,839.9499999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="AuF2" data-to="C12" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="614.0420000000001,839.9499999999998 657.236,839.9499999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Conc" data-to="Cnc1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="456.58900000000006,969.7499999999999 473.9560000000001,969.7499999999999 473.9560000000001,904.8499999999999 491.3230000000001,904.8499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Cnc1" data-to="C13" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="600.704,904.8499999999999 657.236,904.8499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Conc" data-to="Cnc2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="456.58900000000006,969.7499999999999 473.9560000000001,969.7499999999999 473.9560000000001,969.7499999999999 491.3230000000001,969.7499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Cnc2" data-to="C14" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="605.1500000000001,969.7499999999999 657.236,969.7499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Conc" data-to="Cnc3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="456.58900000000006,969.7499999999999 473.9560000000001,969.7499999999999 473.9560000000001,1034.6499999999999 491.3230000000001,1034.6499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Cnc3" data-to="C15" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="628.8620000000001,1034.6499999999999 657.236,1034.6499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="node" data-id="Root" data-label="📁 src" data-shape="rectangle">
+  <rect x="40" y="621.2249999999999" width="79.741" height="36.900000000000006" rx="0" ry="0" fill="#f4f6f8" stroke="#d0d7de" stroke-width="2px" />
+  <text x="79.87049999999999" y="639.675" text-anchor="middle" font-size="13" font-weight="500" fill="#24292f" dy="4.55">📁 src</text>
+</g>
+<g class="node" data-id="Inv" data-label="📁 inventory" data-shape="rectangle">
+  <rect x="167.74099999999999" y="621.2249999999999" width="115.30900000000001" height="36.900000000000006" rx="0" ry="0" fill="#f4f6f8" stroke="#d0d7de" stroke-width="2px" />
+  <text x="225.3955" y="639.675" text-anchor="middle" font-size="13" font-weight="500" fill="#24292f" dy="4.55">📁 inventory</text>
+</g>
+<g class="node" data-id="P" data-label="📁 persistence" data-shape="rectangle">
+  <rect x="319.05000000000007" y="104.89999999999999" width="130.12900000000002" height="36.900000000000006" rx="0" ry="0" fill="#f4f6f8" stroke="#d0d7de" stroke-width="2px" />
+  <text x="384.1145000000001" y="123.35" text-anchor="middle" font-size="13" font-weight="500" fill="#24292f" dy="4.55">📁 persistence</text>
+</g>
+<g class="node" data-id="Cat" data-label="📁 catalog" data-shape="rectangle">
+  <rect x="319.05" y="494.2999999999999" width="101.971" height="36.900000000000006" rx="0" ry="0" fill="#f4f6f8" stroke="#d0d7de" stroke-width="2px" />
+  <text x="370.0355" y="512.7499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#24292f" dy="4.55">📁 catalog</text>
+</g>
+<g class="node" data-id="Tx" data-label="📁 transactions" data-shape="rectangle">
+  <rect x="319.05000000000007" y="576.0999999999999" width="133.09300000000002" height="36.900000000000006" rx="0" ry="0" fill="#f4f6f8" stroke="#d0d7de" stroke-width="2px" />
+  <text x="385.5965000000001" y="594.55" text-anchor="middle" font-size="13" font-weight="500" fill="#24292f" dy="4.55">📁 transactions</text>
+</g>
+<g class="node" data-id="AC" data-label="📁 access_control" data-shape="rectangle">
+  <rect x="319.05000000000007" y="666.3499999999999" width="152.359" height="36.900000000000006" rx="0" ry="0" fill="#f4f6f8" stroke="#d0d7de" stroke-width="2px" />
+  <text x="395.2295000000001" y="684.8" text-anchor="middle" font-size="13" font-weight="500" fill="#24292f" dy="4.55">📁 access_control</text>
+</g>
+<g class="node" data-id="Au" data-label="📁 auth" data-shape="rectangle">
+  <rect x="319.05" y="784.8249999999998" width="84.18700000000001" height="36.900000000000006" rx="0" ry="0" fill="#f4f6f8" stroke="#d0d7de" stroke-width="2px" />
+  <text x="361.1435" y="803.2749999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#24292f" dy="4.55">📁 auth</text>
+</g>
+<g class="node" data-id="Conc" data-label="📁 concurrency" data-shape="rectangle">
+  <rect x="319.05000000000007" y="951.2999999999998" width="137.539" height="36.900000000000006" rx="0" ry="0" fill="#f4f6f8" stroke="#d0d7de" stroke-width="2px" />
+  <text x="387.81950000000006" y="969.7499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#24292f" dy="4.55">📁 concurrency</text>
+</g>
+<g class="node" data-id="P1" data-label="📄 database.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="40" width="131.611" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="557.1285" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 database.py</text>
+</g>
+<g class="node" data-id="C1" data-label="🚧 DatabaseManager" data-shape="rounded">
+  <rect x="657.236" y="40" width="169.402" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="741.937" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 DatabaseManager</text>
+</g>
+<g class="node" data-id="P2" data-label="📄 repository.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="104.89999999999999" width="139.02100000000002" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="560.8335000000001" y="123.35" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 repository.py</text>
+</g>
+<g class="node" data-id="C2" data-label="&quot;🚧 Repository (Base" data-shape="rounded">
+  <rect x="657.236" y="104.89999999999999" width="164.95600000000002" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="739.7139999999999" y="123.35" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">&quot;🚧 Repository (Base</text>
+</g>
+<g class="node" data-id="PR" data-label="📁 repositories" data-shape="rectangle">
+  <rect x="491.3230000000001" y="299.59999999999997" width="131.611" height="36.900000000000006" rx="0" ry="0" fill="#f4f6f8" stroke="#d0d7de" stroke-width="2px" />
+  <text x="557.1285" y="318.04999999999995" text-anchor="middle" font-size="13" font-weight="500" fill="#24292f" dy="4.55">📁 repositories</text>
+</g>
+<g class="node" data-id="PR1" data-label="📄 products.py" data-shape="rectangle">
+  <rect x="657.236" y="169.79999999999998" width="130.12900000000002" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="722.3005" y="188.25" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 products.py</text>
+</g>
+<g class="node" data-id="C3" data-label="🚧 ProductRepository" data-shape="rounded">
+  <rect x="793.509" y="169.79999999999998" width="171.62499999999997" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="879.3215" y="188.25" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 ProductRepository</text>
+</g>
+<g class="node" data-id="PR2" data-label="📄 suppliers.py" data-shape="rectangle">
+  <rect x="657.236" y="234.7" width="133.09300000000002" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="723.7825" y="253.14999999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 suppliers.py</text>
+</g>
+<g class="node" data-id="C4" data-label="🚧 SupplierRepository" data-shape="rounded">
+  <rect x="793.509" y="234.7" width="174.589" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="880.8035" y="253.14999999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 SupplierRepository</text>
+</g>
+<g class="node" data-id="PR3" data-label="📄 transactions.py" data-shape="rectangle">
+  <rect x="657.236" y="299.59999999999997" width="150.877" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="732.6745" y="318.04999999999995" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 transactions.py</text>
+</g>
+<g class="node" data-id="C5" data-label="🚧 StockTransactionRepository" data-shape="rounded">
+  <rect x="839.6669999999999" y="299.59999999999997" width="230.90499999999997" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="955.1194999999999" y="318.04999999999995" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 StockTransactionRepository</text>
+</g>
+<g class="node" data-id="PR4" data-label="📄 roles.py" data-shape="rectangle">
+  <rect x="657.236" y="364.49999999999994" width="107.899" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="711.1855" y="382.94999999999993" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 roles.py</text>
+</g>
+<g class="node" data-id="C6" data-label="🚧 RoleRepository" data-shape="rounded">
+  <rect x="793.509" y="364.49999999999994" width="150.877" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="868.9475" y="382.94999999999993" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 RoleRepository</text>
+</g>
+<g class="node" data-id="PR5" data-label="📄 users.py" data-shape="rectangle">
+  <rect x="657.236" y="429.3999999999999" width="112.345" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="713.4085" y="447.8499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 users.py</text>
+</g>
+<g class="node" data-id="C7" data-label="🚧 UserRepository" data-shape="rounded">
+  <rect x="793.509" y="429.3999999999999" width="153.841" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="870.4295" y="447.8499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 UserRepository</text>
+</g>
+<g class="node" data-id="CatF" data-label="📄 models.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="494.2999999999999" width="118.273" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="550.4595" y="512.7499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 models.py</text>
+</g>
+<g class="node" data-id="C8" data-label="🚧 Product" data-shape="rounded">
+  <rect x="657.236" y="494.2999999999999" width="106.417" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="710.4445" y="512.7499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 Product</text>
+</g>
+<g class="node" data-id="TxF" data-label="📄 models.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="576.0999999999999" width="118.273" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="550.4595" y="594.55" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 models.py</text>
+</g>
+<g class="node" data-id="C9" data-label="🚧 StockTransaction
+🚧 Sale
+🚧 Purchase" data-shape="rounded">
+  <rect x="657.236" y="559.1999999999998" width="165.697" height="70.7" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="740.0844999999999" y="594.5499999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#856404"><tspan x="740.0844999999999" dy="-12.350000000000001">🚧 StockTransaction</tspan><tspan x="740.0844999999999" dy="16.900000000000002">🚧 Sale</tspan><tspan x="740.0844999999999" dy="16.900000000000002">🚧 Purchase</tspan></text>
+</g>
+<g class="node" data-id="ACF" data-label="📄 models.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="666.3499999999999" width="118.273" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="550.4595" y="684.8" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 models.py</text>
+</g>
+<g class="node" data-id="C10" data-label="🚧 Role
+🚧 TableAccessGrant" data-shape="rounded">
+  <rect x="657.236" y="657.8999999999999" width="171.62499999999997" height="53.800000000000004" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="743.0485" y="684.7999999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#856404"><tspan x="743.0485" dy="-3.9000000000000012">🚧 Role</tspan><tspan x="743.0485" dy="16.900000000000002">🚧 TableAccessGrant</tspan></text>
+</g>
+<g class="node" data-id="AuF1" data-label="📄 models.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="748.1499999999999" width="118.273" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="550.4595" y="766.5999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 models.py</text>
+</g>
+<g class="node" data-id="C11" data-label="🚧 User
+🚧 Session" data-shape="rounded">
+  <rect x="657.236" y="739.6999999999998" width="107.899" height="53.800000000000004" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="711.1855" y="766.5999999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#856404"><tspan x="711.1855" dy="-3.9000000000000012">🚧 User</tspan><tspan x="711.1855" dy="16.900000000000002">🚧 Session</tspan></text>
+</g>
+<g class="node" data-id="AuF2" data-label="📄 service.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="821.4999999999998" width="122.71900000000001" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="552.6825000000001" y="839.9499999999998" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 service.py</text>
+</g>
+<g class="node" data-id="C12" data-label="&quot;🚧 Authentication (Service" data-shape="rounded">
+  <rect x="657.236" y="821.4999999999998" width="199.042" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="756.757" y="839.9499999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">&quot;🚧 Authentication (Service</text>
+</g>
+<g class="node" data-id="Cnc1" data-label="📄 locks.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="886.3999999999999" width="109.381" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="546.0135000000001" y="904.8499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 locks.py</text>
+</g>
+<g class="node" data-id="C13" data-label="🚧 LockManager" data-shape="rounded">
+  <rect x="657.236" y="886.3999999999999" width="144.208" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="729.34" y="904.8499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 LockManager</text>
+</g>
+<g class="node" data-id="Cnc2" data-label="📄 queue.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="951.2999999999998" width="113.827" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="548.2365000000001" y="969.7499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 queue.py</text>
+</g>
+<g class="node" data-id="C14" data-label="🚧 PriorityJobQueue" data-shape="rounded">
+  <rect x="657.236" y="951.2999999999998" width="165.697" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="740.0844999999999" y="969.7499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 PriorityJobQueue</text>
+</g>
+<g class="node" data-id="Cnc3" data-label="📄 scheduler.py" data-shape="rectangle">
+  <rect x="491.3230000000001" y="1016.1999999999998" width="137.539" height="36.900000000000006" rx="0" ry="0" fill="#e1f5fe" stroke="#0288d1" stroke-width="2px" />
+  <text x="560.0925000000001" y="1034.6499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#000" dy="4.55">📄 scheduler.py</text>
+</g>
+<g class="node" data-id="C15" data-label="🚧 RequestScheduler" data-shape="rounded">
+  <rect x="657.236" y="1016.1999999999998" width="170.14299999999997" height="36.900000000000006" rx="6" ry="6" fill="#fff3cd" stroke="#ffc107" stroke-width="2px" />
+  <text x="742.3075" y="1034.6499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="#856404" dy="4.55">🚧 RequestScheduler</text>
+</g>
+</svg>

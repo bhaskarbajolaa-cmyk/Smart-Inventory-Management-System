@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smart-inventory-management"
+version = "0.1.0"
+description = "Phase 2 smart inventory management system"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+inventory-system = "inventory.app.main:main"
+inventory-server = "inventory.app.server:main"
+
+[project.optional-dependencies]
+web = ["Flask>=3.0"]
+postgres = ["psycopg[binary]>=3.1"]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
