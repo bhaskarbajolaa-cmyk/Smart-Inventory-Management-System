@@ -1,5 +1,8 @@
 """Priority queue for scheduled jobs."""
 
+import heapq
+from threading import Condition, RLock
+
 from inventory.concurrency.jobs import Job
 
 
@@ -7,36 +10,67 @@ class PriorityJobQueue:
     """Capacity-limited priority heap for jobs."""
 
     def __init__(self, capacity: int = 100) -> None:
-        # TODO: Initialize a thread-safe heap, stable insertion counter, and queue state.
+        """Create a queue that can hold at most ``capacity`` pending jobs."""
+        if capacity < 0:
+            raise ValueError("capacity must be non-negative")
+
         self.capacity = capacity
         self.heap: list[tuple[int, int, Job]] = []
         self.accepting = True
         self._insertion_order = 0
+        self._lock = RLock()
+        self._condition = Condition(self._lock)
 
     def enqueue(self, job: Job) -> bool:
-        # TODO: Reject a full or paused queue; enqueue by priority and stable order.
-        raise NotImplementedError
+        """Add ``job`` when the queue is accepting work and has capacity."""
+        with self._condition:
+            if not self.accepting or len(self.heap) >= self.capacity:
+                return False
+
+            heapq.heappush(
+                self.heap,
+                (job.priority, self._insertion_order, job),
+            )
+            self._insertion_order += 1
+            self._condition.notify()
+            return True
 
     def dequeue(self) -> Job | None:
-        # TODO: Remove and return the highest-priority job, or None when unavailable.
-        raise NotImplementedError
+        """Remove the next job, returning ``None`` if paused or empty."""
+        with self._lock:
+            if not self.accepting or not self.heap:
+                return None
+            return heapq.heappop(self.heap)[2]
 
     def peek(self) -> Job | None:
-        # TODO: Return the next job without removing it.
-        raise NotImplementedError
+        """Return the next pending job without removing it."""
+        with self._lock:
+            return self.heap[0][2] if self.heap else None
 
     def remove(self, job_id: str) -> bool:
-        # TODO: Remove a pending job by ID and restore heap ordering.
-        raise NotImplementedError
+        """Remove the first pending job whose ID is ``job_id``."""
+        with self._lock:
+            for index, (_, _, job) in enumerate(self.heap):
+                if job.job_id == job_id:
+                    last_entry = self.heap.pop()
+                    if index < len(self.heap):
+                        self.heap[index] = last_entry
+                        heapq.heapify(self.heap)
+                    return True
+            return False
 
     def size(self) -> int:
-        # TODO: Return the current number of queued jobs.
-        raise NotImplementedError
+        """Return the number of pending jobs."""
+        with self._lock:
+            return len(self.heap)
 
     def pause(self) -> None:
-        # TODO: Stop new jobs from being dequeued until resumed.
-        raise NotImplementedError
+        """Pause submissions and dequeue operations."""
+        with self._condition:
+            self.accepting = False
 
     def resume(self) -> None:
-        # TODO: Resume queue processing and notify waiting workers.
-        raise NotImplementedError
+        """Resume submissions and dequeue operations."""
+        with self._condition:
+            self.accepting = True
+            self._condition.notify_all()
