@@ -20,12 +20,15 @@ class Product:
     updated_at: datetime
 
     def update_stock(self, quantity_delta: int) -> None:
-        # TODO: Apply a stock change and reject quantities below zero.
-        raise NotImplementedError
+        """Apply a stock change and reject quantities below zero."""
+        if self.quantity + quantity_delta < 0:
+            raise ValueError("Stock quantity cannot be negative.")
+        self.quantity += quantity_delta
+        self.updated_at = datetime.now()
 
     def is_low_stock(self) -> bool:
-        # TODO: Compare current quantity with the configured reorder level.
-        raise NotImplementedError
+        """Compare current quantity with the configured reorder level."""
+        return self.quantity <= self.reorder_level
 
 
 @dataclass
