@@ -13,25 +13,27 @@ class Repository(ABC, Generic[EntityT, FilterT]):
     """Base contract; concrete repositories are the only DB access layer."""
 
     def __init__(self, db: DatabaseManager) -> None:
-        # TODO: Retain the shared DatabaseManager instance.
+        """Retain the shared DatabaseManager instance."""
+        if db is None:
+            raise ValueError("A valid DatabaseManager instance is required.")
         self.db = db
 
     @abstractmethod
     def find_by_id(self, entity_id: int) -> EntityT | None:
-        # TODO: Fetch one entity by its primary key.
+        """Fetch one entity by its primary key."""
         raise NotImplementedError
 
     @abstractmethod
     def find_all(self, filters: FilterT | None = None) -> list[EntityT]:
-        # TODO: Return entities matching the supplied filter object.
+        """Return entities matching the supplied filter object."""
         raise NotImplementedError
 
     @abstractmethod
     def save(self, entity: EntityT) -> EntityT:
-        # TODO: Insert or update the entity and return the persisted representation.
+        """Insert or update the entity and return the persisted representation."""
         raise NotImplementedError
 
     @abstractmethod
     def delete(self, entity_id: int) -> None:
-        # TODO: Delete the entity by primary key and define missing-ID behavior.
+        """Delete the entity by primary key and define missing-ID behavior."""
         raise NotImplementedError
