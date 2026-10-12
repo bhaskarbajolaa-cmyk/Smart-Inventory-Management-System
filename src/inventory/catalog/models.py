@@ -19,6 +19,16 @@ class Product:
     supplier_id: int
     updated_at: datetime
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.unit_price, Decimal):
+            self.unit_price = Decimal(str(self.unit_price))
+        if self.quantity < 0:
+            raise ValueError("Quantity cannot be negative.")
+        if self.reorder_level < 0:
+            raise ValueError("Reorder level cannot be negative.")
+        if self.unit_price < Decimal("0"):
+            raise ValueError("Unit price cannot be negative.")
+
     def update_stock(self, quantity_delta: int) -> None:
         """Apply a stock change and reject quantities below zero."""
         if self.quantity + quantity_delta < 0:
@@ -40,3 +50,7 @@ class Supplier:
     contact_email: str
     phone: str
     address: str
+
+    def __post_init__(self) -> None:
+        if not self.name or not self.name.strip():
+            raise ValueError("Supplier name cannot be empty.")
