@@ -12,7 +12,11 @@ if TYPE_CHECKING:
 
 @dataclass
 class User:
-    """User identity and profile, without password or login mechanics."""
+    """User identity and profile, without password or login mechanics.
+
+    Credentials (password hash) are kept in ``UserCredentials`` and managed
+    exclusively by ``Authentication``; they never appear on this object.
+    """
 
     user_id: int
     username: str
@@ -38,8 +42,27 @@ class User:
 
 
 @dataclass
+class UserCredentials:
+    """Stores the hashed password for a user.
+
+    This object is never exposed outside ``Authentication`` and
+    ``UserRepository``.  Keeping credentials separate from ``User`` ensures
+    that the user identity object is safe to pass to any layer without
+    accidentally leaking sensitive data.
+    """
+
+    user_id: int
+    password_hash: str
+
+
+@dataclass
 class Session:
-    """Short-lived authenticated session."""
+    """Short-lived authenticated session.
+
+    ``roles`` is a ``list[str]`` in Python.  When persisted to the
+    ``sessions`` table the list is JSON-encoded into the ``roles TEXT`` column
+    by ``SessionRepository``; it is decoded back on retrieval.
+    """
 
     session_token: str
     user_id: int

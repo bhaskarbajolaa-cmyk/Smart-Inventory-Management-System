@@ -15,7 +15,14 @@ class Permission:
 
 @dataclass
 class TableAccessGrant:
-    """Permission grant scoped to one table or all tables."""
+    """Permission grant scoped to one table or all tables.
+
+    ``permission`` is a fully-hydrated ``Permission`` object loaded via a JOIN
+    from the ``permissions`` table when the grant is fetched from the database.
+    The ``permission_code`` TEXT column has been removed from the
+    ``table_access_grants`` schema to eliminate the redundant denormalised copy
+    that could go stale when a permission code was renamed.
+    """
 
     grant_id: int
     role_id: int
@@ -23,7 +30,7 @@ class TableAccessGrant:
     table_name: str | None
     granted_by: int
     granted_at: datetime
-    permission_code: str
+    permission: Permission  # hydrated via JOIN — never store a bare code string
 
     def applies_to(self, table_name: str) -> bool:
         # TODO: Match the requested table, treating a null grant table as global.

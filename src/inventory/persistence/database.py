@@ -1,214 +1,182 @@
-"""DatabaseManager and storage implementation boundary."""
+"""DatabaseManager — thin coordinator that delegates all DB work to the active adapter.
+
+Switching between SQLite and PostgreSQL is done by setting
+``DatabaseConfig.backend`` to ``"sqlite"`` (default) or ``"postgresql"``.
+All repositories and transaction code interact with ``DatabaseManager`` exactly
+as before; the adapter change is completely transparent to them.
+"""
+
+from __future__ import annotations
 
 from collections.abc import Sequence
-import sqlite3
-import threading
+from pathlib import Path
 from typing import Any, ClassVar
 
+from inventory.persistence.config import (
+    DatabaseConfig,
+    DEFAULT_DB_NAME,
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+)
+from inventory.persistence.adapters.base import DatabaseAdapter
 
-SCHEMA_SQL = """
-CREATE TABLE IF NOT EXISTS suppliers (
-    supplier_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    contact_email TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    address TEXT NOT NULL
-);
 
-CREATE TABLE IF NOT EXISTS products (
-    product_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    sku TEXT NOT NULL UNIQUE,
-    category TEXT NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 0,
-    reorder_level INTEGER NOT NULL DEFAULT 0,
-    unit_price TEXT NOT NULL,
-    supplier_id INTEGER NOT NULL REFERENCES suppliers(supplier_id),
-    updated_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS roles (
-    role_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    role_name TEXT NOT NULL UNIQUE,
-    created_by INTEGER,
-    is_system_default INTEGER NOT NULL DEFAULT 0,
-    default_job_priority INTEGER NOT NULL DEFAULT 1
-);
-
-CREATE TABLE IF NOT EXISTS permissions (
-    permission_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL UNIQUE,
-    description TEXT
-);
-
-CREATE TABLE IF NOT EXISTS table_access_grants (
-    grant_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    role_id INTEGER REFERENCES roles(role_id) ON DELETE CASCADE,
-    permission_id INTEGER REFERENCES permissions(permission_id) ON DELETE CASCADE,
-    table_name TEXT,
-    granted_by INTEGER,
-    granted_at TEXT NOT NULL,
-    permission_code TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS users (
-    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    email TEXT NOT NULL,
-    role_id INTEGER REFERENCES roles(role_id),
-    password_hash TEXT,
-    created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS sessions (
-    session_token TEXT PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-    roles TEXT,
-    issued_at TEXT NOT NULL,
-    expires_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS stock_transactions (
-    transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    product_id INTEGER NOT NULL REFERENCES products(product_id),
-    user_id INTEGER NOT NULL REFERENCES users(user_id),
-    quantity INTEGER NOT NULL,
-    timestamp TEXT NOT NULL,
-    status TEXT NOT NULL,
-    transaction_type TEXT NOT NULL,
-    sale_price TEXT,
-    customer_ref TEXT,
-    sold_by_user_id INTEGER,
-    unit_cost TEXT,
-    supplier_id INTEGER REFERENCES suppliers(supplier_id),
-    ordered_by_user_id INTEGER
-);
-"""
+def load_schema() -> str:
+    """Load the SQL schema DDL from the sibling ``schema.sql`` file."""
+    schema_file = Path(__file__).parent / "schema.sql"
+    return schema_file.read_text()
 
 
 class DatabaseManager:
-    """Singleton entry point for PostgreSQL or the in-memory demo store."""
+    """Singleton coordinator that delegates all DB operations to the active adapter.
+
+    Usage (SQLite — default)::
+
+        db = DatabaseManager.get_instance()
+        db.connect()
+
+    Usage (PostgreSQL)::
+
+        config = DatabaseConfig(
+            backend="postgresql",
+            host="localhost", port=5432,
+            db_name="inventory", user="inv_user", password="secret",
+        )
+        db = DatabaseManager(config=config)
+        db.connect()
+    """
 
     _instance: ClassVar["DatabaseManager | None"] = None
-    connection_pool: Any
 
     def __init__(
         self,
-        host: str = "localhost",
-        port: int = 5432,
-        db_name: str = "inventory.db",
+        config: DatabaseConfig | None = None,
+        host: str | None = None,
+        port: int | None = None,
+        db_name: str | None = None,
     ) -> None:
-        self.host = host
-        self.port = port
-        self.db_name = db_name
-        self.connection_pool = None
-        self._connection: sqlite3.Connection | None = None
-        self.in_transaction: bool = False
-        self.last_inserted_id: int | None = None
-        self.last_rowcount: int | None = None
-        self._lock: threading.RLock = threading.RLock()
+        if config is not None:
+            self.config = config
+        else:
+            self.config = DatabaseConfig(
+                host=host or DEFAULT_HOST,
+                port=port or DEFAULT_PORT,
+                db_name=db_name or DEFAULT_DB_NAME,
+            )
+
+        # Convenience aliases kept for backwards-compat with existing code
+        self.host = self.config.host
+        self.port = self.config.port
+        self.db_name = self.config.db_name
+        self.connection_pool: Any = None  # reserved for future connection-pool support
+
+        self._adapter: DatabaseAdapter | None = None
+
+    # ------------------------------------------------------------------
+    # Singleton helpers
+    # ------------------------------------------------------------------
 
     @classmethod
     def get_instance(cls) -> "DatabaseManager":
-        """Return the shared singleton DatabaseManager instance."""
+        """Return the shared singleton ``DatabaseManager`` instance."""
         if cls._instance is None:
             cls._instance = DatabaseManager()
         return cls._instance
 
     @classmethod
     def reset_instance(cls) -> None:
-        """Reset the singleton instance (primarily for tests)."""
+        """Reset the singleton (primarily for tests)."""
         if cls._instance is not None:
             cls._instance.close()
             cls._instance = None
 
+    # ------------------------------------------------------------------
+    # Lifecycle
+    # ------------------------------------------------------------------
+
     def connect(self) -> "DatabaseManager":
-        """Establish database connection, enable foreign keys, and initialize schema."""
-        with self._lock:
-            if self._connection is None:
-                self._connection = sqlite3.connect(
-                    self.db_name,
-                    isolation_level=None,
-                    check_same_thread=False,
-                    timeout=30.0,
-                )
-                self._connection.execute("PRAGMA foreign_keys = ON")
-                if self.db_name != ":memory:":
-                    try:
-                        self._connection.execute("PRAGMA journal_mode = WAL")
-                    except Exception:
-                        pass
-                self._connection.execute("PRAGMA busy_timeout = 5000")
-                self._connection.row_factory = sqlite3.Row
-                self.in_transaction = False
-                self.initialize_schema()
+        """Create the adapter, open the connection, and initialise the schema."""
+        if self._adapter is None:
+            self._adapter = self._create_adapter()
+            self._adapter.connect(self.config)
+            self.initialize_schema()
         return self
 
+    def _create_adapter(self) -> DatabaseAdapter:
+        """Instantiate the adapter selected by ``DatabaseConfig.backend``."""
+        backend = getattr(self.config, "backend", "sqlite")
+        if backend == "postgresql":
+            from inventory.persistence.adapters.postgresql import PostgreSQLAdapter
+            return PostgreSQLAdapter()
+        from inventory.persistence.adapters.sqlite import SQLiteAdapter
+        return SQLiteAdapter()
+
     def initialize_schema(self) -> None:
-        """Execute table creation DDL for core entities if not already created."""
-        with self._lock:
-            if self._connection is None:
-                raise ConnectionError("Database connection is not established.")
-            self._connection.executescript(SCHEMA_SQL)
+        """Execute the schema DDL via the active adapter."""
+        if self._adapter is None:
+            raise ConnectionError("Database connection is not established.")
+        self._adapter.execute_schema(load_schema())
+
+    def close(self) -> None:
+        """Close the adapter connection and release resources."""
+        if self._adapter is not None:
+            try:
+                self._adapter.close()
+            finally:
+                self._adapter = None
+
+    # ------------------------------------------------------------------
+    # Query delegation
+    # ------------------------------------------------------------------
 
     def execute_query(
         self,
         sql: str,
         params: Sequence[Any] | None = None,
-    ) -> list[sqlite3.Row]:
-        """Execute a parameterized query and return its result set."""
-        with self._lock:
-            if self._connection is None:
-                raise ConnectionError("Database connection is not established.")
-            cursor = self._connection.cursor()
-            try:
-                if params is not None:
-                    cursor.execute(sql, tuple(params))
-                else:
-                    cursor.execute(sql)
-                self.last_inserted_id = cursor.lastrowid
-                self.last_rowcount = cursor.rowcount
-                result = cursor.fetchall()
-                return result
-            finally:
-                cursor.close()
+    ) -> list[Any]:
+        """Execute a parameterised query and return its result rows."""
+        if self._adapter is None:
+            raise ConnectionError("Database connection is not established.")
+        return self._adapter.execute_query(sql, params)
+
+    # ------------------------------------------------------------------
+    # Transaction delegation
+    # ------------------------------------------------------------------
 
     def begin_transaction(self) -> "DatabaseManager":
-        """Start a transaction on the current connection/context."""
-        with self._lock:
-            if self._connection is None:
-                raise ConnectionError("Database connection is not established.")
-            if not self.in_transaction:
-                self._connection.execute("BEGIN")
-                self.in_transaction = True
+        """Start a transaction on the current connection."""
+        if self._adapter is None:
+            raise ConnectionError("Database connection is not established.")
+        self._adapter.begin_transaction()
         return self
 
     def commit(self) -> None:
         """Commit the current transaction."""
-        with self._lock:
-            if self._connection is None:
-                raise ConnectionError("Database connection is not established.")
-            if self.in_transaction:
-                self._connection.commit()
-                self.in_transaction = False
+        if self._adapter is None:
+            raise ConnectionError("Database connection is not established.")
+        self._adapter.commit()
 
     def rollback(self) -> None:
-        """Roll back the current transaction after a failed operation."""
-        with self._lock:
-            if self._connection is None:
-                raise ConnectionError("Database connection is not established.")
-            if self.in_transaction:
-                self._connection.rollback()
-                self.in_transaction = False
+        """Roll back the current transaction."""
+        if self._adapter is None:
+            raise ConnectionError("Database connection is not established.")
+        self._adapter.rollback()
 
-    def close(self) -> None:
-        """Close the database connection and release resources."""
-        with self._lock:
-            if self._connection is not None:
-                try:
-                    if self.in_transaction:
-                        self.rollback()
-                    self._connection.close()
-                finally:
-                    self._connection = None
-                    self.in_transaction = False
+    # ------------------------------------------------------------------
+    # Delegated read-only properties
+    # ------------------------------------------------------------------
+
+    @property
+    def in_transaction(self) -> bool:
+        """Whether a transaction is currently open (delegated to adapter)."""
+        return self._adapter.in_transaction if self._adapter else False
+
+    @property
+    def last_inserted_id(self) -> int | None:
+        """Row ID of the most recently inserted row."""
+        return self._adapter.last_inserted_id if self._adapter else None
+
+    @property
+    def last_rowcount(self) -> int | None:
+        """Row count affected by the most recent DML statement."""
+        return self._adapter.last_rowcount if self._adapter else None

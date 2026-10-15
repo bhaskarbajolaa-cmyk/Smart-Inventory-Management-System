@@ -31,8 +31,11 @@ def build_application() -> ApplicationServices:
     authentication = Authentication(user_repository)
     lock_manager = LockManager()
     retry_policy = RetryPolicy()
-    job_queue = PriorityJobQueue()
-    scheduler = RequestScheduler(job_queue, retry_policy)
+    # Use a single constant so queue capacity and scheduler depth limit are
+    # always in sync — two independent limits caused confusing double-rejection.
+    _max_depth = 100
+    job_queue = PriorityJobQueue(capacity=_max_depth)
+    scheduler = RequestScheduler(job_queue, retry_policy, max_queue_depth=_max_depth)
     transaction_context = TransactionContext(
         product_repository=product_repository,
         transaction_repository=transaction_repository,
