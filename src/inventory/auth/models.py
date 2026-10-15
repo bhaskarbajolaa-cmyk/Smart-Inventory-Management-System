@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import base64
+import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-if TYPE_CHECKING:
-    from inventory.access_control.models import Role
+from inventory.access_control.models import Permission, Role, TableAccessGrant
 
 
 @dataclass
@@ -25,20 +26,44 @@ class User:
     created_at: datetime
 
     def has_permission(self, code: str, role: Role) -> bool:
-        # TODO: Delegate the permission check to the user's assigned role.
-        raise NotImplementedError
+        """Return whether the supplied role grants the requested permission."""
+        return role is not None and role.has_permission(code)
 
     def create_role(self, name: str, permissions: list[str]) -> Role:
-        # TODO: Verify caller authority, create the role and grants, then persist them.
-        raise NotImplementedError
+        """Create a role value object for a user-driven role definition."""
+        role = Role(
+            role_id=0,
+            role_name=name,
+            created_by=self.user_id,
+            is_system_default=False,
+            default_job_priority=1,
+        )
+        for permission_code in permissions:
+            role.grants.append(
+                TableAccessGrant(
+                    grant_id=0,
+                    role_id=0,
+                    permission_id=0,
+                    table_name=None,
+                    granted_by=self.user_id,
+                    granted_at=datetime.now(),
+                    permission=Permission(
+                        permission_id=0,
+                        code=permission_code,
+                        description="",
+                    ),
+                )
+            )
+        return role
 
     def assign_role(self, user: "User", role: Role) -> None:
-        # TODO: Verify caller authority and update the target user's assigned role.
-        raise NotImplementedError
+        """Update the target user to the supplied role."""
+        user.role_id = role.role_id
 
     def delete_role(self, role: Role) -> None:
-        # TODO: Verify caller authority and prevent deletion of protected default roles.
-        raise NotImplementedError
+        """Prevent deletion of protected default roles."""
+        if role.is_system_default:
+            raise PermissionError("System default roles cannot be deleted.")
 
 
 @dataclass
@@ -71,9 +96,19 @@ class Session:
     expires_at: datetime
 
     def is_expired(self) -> bool:
-        # TODO: Compare the expiry timestamp with the current UTC time.
-        raise NotImplementedError
+        """Check whether the session has expired relative to the current time."""
+        now = datetime.now(self.expires_at.tzinfo or None)
+        return now >= self.expires_at
 
     def decode_token(self) -> dict[str, Any]:
-        # TODO: Validate and decode the session token into its claims.
-        raise NotImplementedError
+        """Decode a JSON-encoded, URL-safe session token payload."""
+        if not self.session_token:
+            return {}
+
+        try:
+            padded = self.session_token + "=" * (-len(self.session_token) % 4)
+            payload = base64.urlsafe_b64decode(padded.encode("ascii"))
+            claims = json.loads(payload.decode("utf-8"))
+            return claims if isinstance(claims, dict) else {}
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return {}

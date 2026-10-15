@@ -32,9 +32,17 @@ class TableAccessGrant:
     granted_at: datetime
     permission: Permission  # hydrated via JOIN — never store a bare code string
 
-    def applies_to(self, table_name: str) -> bool:
-        # TODO: Match the requested table, treating a null grant table as global.
-        raise NotImplementedError
+    def applies_to(self, table_name: str | None) -> bool:
+        """Return true when the grant applies to the requested table.
+
+        A grant with ``table_name is None`` is global and therefore applies to
+        every table unless the caller did not specify a table at all.
+        """
+        if table_name is None:
+            return self.table_name is None or self.table_name == ""
+        if self.table_name is None or self.table_name == "":
+            return True
+        return self.table_name.lower() == table_name.lower()
 
 
 @dataclass
@@ -49,13 +57,27 @@ class Role:
     grants: list[TableAccessGrant] = field(default_factory=list)
 
     def has_permission(self, code: str, table_name: str | None = None) -> bool:
-        # TODO: Return true when an applicable grant contains the requested code.
-        raise NotImplementedError
+        """Return true when this role grants the requested permission."""
+        for grant in self.grants:
+            if grant.permission.code == code and grant.applies_to(table_name):
+                return True
+        return False
 
     def add_permission(self, grant: TableAccessGrant) -> None:
-        # TODO: Add a grant without duplicating an existing equivalent grant.
-        raise NotImplementedError
+        """Add a grant only when an equivalent one is not already present."""
+        for existing in self.grants:
+            if (
+                existing.role_id == grant.role_id
+                and existing.permission_id == grant.permission_id
+                and existing.table_name == grant.table_name
+            ):
+                return
+        self.grants.append(grant)
 
     def remove_permission(self, grant_id: int) -> None:
-        # TODO: Remove the matching grant and report missing IDs consistently.
-        raise NotImplementedError
+        """Remove the matching grant; raise KeyError when no grant matches."""
+        for index, grant in enumerate(self.grants):
+            if grant.grant_id == grant_id:
+                del self.grants[index]
+                return
+        raise KeyError(f"Grant with ID {grant_id} does not exist.")
