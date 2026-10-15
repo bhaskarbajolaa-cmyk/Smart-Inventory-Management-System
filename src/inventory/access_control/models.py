@@ -64,20 +64,9 @@ class Role:
         return False
 
     def add_permission(self, grant: TableAccessGrant) -> None:
-        """Add a grant only when an equivalent one is not already present."""
-        for existing in self.grants:
-            if (
-                existing.role_id == grant.role_id
-                and existing.permission_id == grant.permission_id
-                and existing.table_name == grant.table_name
-            ):
-                return
-        self.grants.append(grant)
+        # TODO: Add a grant without duplicating an existing equivalent grant.
+        raise NotImplementedError
 
     def remove_permission(self, grant_id: int) -> None:
-        """Remove the matching grant; raise KeyError when no grant matches."""
-        for index, grant in enumerate(self.grants):
-            if grant.grant_id == grant_id:
-                del self.grants[index]
-                return
-        raise KeyError(f"Grant with ID {grant_id} does not exist.")
+        # TODO: Remove the matching grant and report missing IDs consistently.
+        raise NotImplementedError

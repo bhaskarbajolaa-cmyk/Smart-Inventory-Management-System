@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any
 from inventory.auth.models import Session
 
 if TYPE_CHECKING:
-    from inventory.auth.models import User
     from inventory.persistence.repositories.users import UserRepository
 
 
@@ -20,7 +19,6 @@ class Authentication:
 
     def __init__(self, user_repository: "UserRepository") -> None:
         self._user_repository = user_repository
-        self._sessions: dict[str, Session] = {}
 
     @staticmethod
     def _hash_password(password: str) -> str:
@@ -40,50 +38,38 @@ class Authentication:
         return encoded.rstrip("=")
 
     def login(self, username: str, password: str) -> Session:
-        """Verify credentials and issue a session for the user's current role."""
-        user = self._user_repository.find_by_username(username)
-        if user is None:
-            raise PermissionError("Invalid username or password.")
-
+        """Verify credentials and issue a session."""
         credentials = self._user_repository.find_credentials_by_username(username)
-        if credentials is None or not self.verify_credentials(username, password):
+        if (
+            credentials is None
+            or credentials.password_hash != self._hash_password(password)
+        ):
             raise PermissionError("Invalid username or password.")
 
-        roles = [str(user.role_id)] if user.role_id else []
+        roles: list[str] = []
         issued_at = datetime.now()
         expires_at = issued_at + timedelta(hours=1)
-        token = self._make_session_token(user.user_id, roles)
+        token = self._make_session_token(credentials.user_id, roles)
         session = Session(
             session_token=token,
-            user_id=user.user_id,
+            user_id=credentials.user_id,
             roles=roles,
             issued_at=issued_at,
             expires_at=expires_at,
         )
-        self._sessions[token] = session
         return session
 
     def logout(self, session: Session) -> None:
-        """Invalidate and remove the supplied session token."""
-        self._sessions.pop(session.session_token, None)
+        # TODO: Invalidate and remove the supplied session token.
+        raise NotImplementedError
 
     def get_session(self, session_token: str) -> Session | None:
-        """Resolve a live session by token without accepting expired sessions."""
-        session = self._sessions.get(session_token)
-        if session is None:
-            return None
-        if session.is_expired():
-            self._sessions.pop(session_token, None)
-            return None
-        return session
+        # TODO: Resolve a live session by token without accepting expired sessions.
+        raise NotImplementedError
 
-    def change_password(self, user: User, new_password: str) -> None:
-        """Hash the new password and update the credential record securely."""
-        digest = self._hash_password(new_password)
-        self._user_repository.db.execute_query(
-            "UPDATE users SET password_hash = ? WHERE user_id = ?",
-            (digest, user.user_id),
-        )
+    def change_password(self, user: "User", new_password: str) -> None:
+        # TODO: Hash the new password and update the authentication record securely.
+        raise NotImplementedError
 
     def verify_credentials(self, username: str, password: str) -> bool:
         """Load the stored hash and compare it with a hash of the supplied password."""
