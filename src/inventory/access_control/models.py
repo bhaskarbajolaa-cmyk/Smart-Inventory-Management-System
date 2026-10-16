@@ -30,7 +30,8 @@ class TableAccessGrant:
     table_name: str | None
     granted_by: int
     granted_at: datetime
-    permission: Permission  # hydrated via JOIN — never store a bare code string
+    permission: Permission | None = None  # hydrated via JOIN — never store a bare code string
+    permission_code: str | None = None
 
     def applies_to(self, table_name: str | None) -> bool:
         """Return true when the grant applies to the requested table.
@@ -59,14 +60,31 @@ class Role:
     def has_permission(self, code: str, table_name: str | None = None) -> bool:
         """Return true when this role grants the requested permission."""
         for grant in self.grants:
-            if grant.permission.code == code and grant.applies_to(table_name):
+            perm_code = (
+                grant.permission.code
+                if grant.permission is not None
+                else getattr(grant, "permission_code", None)
+            )
+            if perm_code == code and grant.applies_to(table_name):
                 return True
         return False
 
     def add_permission(self, grant: TableAccessGrant) -> None:
-        # TODO: Add a grant without duplicating an existing equivalent grant.
-        raise NotImplementedError
+        """Add a grant without duplicating an existing equivalent grant."""
+        for existing in self.grants:
+            if (
+                existing.role_id == grant.role_id
+                and existing.permission_id == grant.permission_id
+                and existing.table_name == grant.table_name
+            ):
+                return
+        self.grants.append(grant)
 
     def remove_permission(self, grant_id: int) -> None:
-        # TODO: Remove the matching grant and report missing IDs consistently.
-        raise NotImplementedError
+        """Remove the matching grant and report missing IDs consistently."""
+        for index, grant in enumerate(self.grants):
+            if grant.grant_id == grant_id:
+                del self.grants[index]
+                return
+        raise KeyError(f"Grant with ID {grant_id} does not exist.")
+

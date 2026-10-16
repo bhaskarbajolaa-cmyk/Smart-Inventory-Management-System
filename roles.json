@@ -1,0 +1,74 @@
+{
+  "1": {
+    "role_id": 1,
+    "role_name": "Admin",
+    "created_by": 1,
+    "is_system_default": false,
+    "default_job_priority": 3,
+    "grants": [
+      {
+        "grant_id": 0,
+        "role_id": 1,
+        "permission_id": 1,
+        "table_name": null,
+        "granted_by": 1,
+        "granted_at": "2026-10-15",
+        "permission_code": "VIEW"
+      },
+      {
+        "grant_id": 0,
+        "role_id": 1,
+        "permission_id": 2,
+        "table_name": null,
+        "granted_by": 1,
+        "granted_at": "2026-10-15",
+        "permission_code": "EDIT"
+      }
+    ]
+  },
+  "2": {
+    "role_id": 2,
+    "role_name": "Manager",
+    "created_by": 1,
+    "is_system_default": false,
+    "default_job_priority": 3,
+    "grants": [
+      {
+        "grant_id": 0,
+        "role_id": 2,
+        "permission_id": 1,
+        "table_name": null,
+        "granted_by": 1,
+        "granted_at": "2026-10-15",
+        "permission_code": "VIEW"
+      },
+      {
+        "grant_id": 0,
+        "role_id": 2,
+        "permission_id": 2,
+        "table_name": null,
+        "granted_by": 1,
+        "granted_at": "2026-10-15",
+        "permission_code": "EDIT"
+      }
+    ]
+  },
+  "3": {
+    "role_id": 3,
+    "role_name": "Supervisor",
+    "created_by": 1,
+    "is_system_default": false,
+    "default_job_priority": 3,
+    "grants": [
+      {
+        "grant_id": 0,
+        "role_id": 3,
+        "permission_id": 1,
+        "table_name": null,
+        "granted_by": 1,
+        "granted_at": "2026-10-15",
+        "permission_code": "VIEW"
+      }
+    ]
+  }
+}

@@ -76,28 +76,28 @@ class RequestScheduler:
     def _worker_loop(self) -> None:
         """Continuous execution loop running on worker threads."""
         while True:
+            job = None
             with self._state_lock:
                 if self._stopped and self.queue.size() == 0 and self._pending_retries == 0:
                     break
 
-            job = self.queue.dequeue()
-            if job is None:
-                with self._state_lock:
+                job = self.queue.dequeue()
+                if job is not None:
+                    if job.status == JobStatus.CANCELLED:
+                        continue
+                    self.active_jobs += 1
+                    self._running_jobs[job.job_id] = job
+                else:
                     if self._stopped or (
                         not self._accepting
                         and self.queue.size() == 0
                         and self._pending_retries == 0
                     ):
                         break
+
+            if job is None:
                 time.sleep(0.01)
                 continue
-
-            if job.status == JobStatus.CANCELLED:
-                continue
-
-            with self._state_lock:
-                self.active_jobs += 1
-                self._running_jobs[job.job_id] = job
 
             try:
                 res = job.run()
@@ -116,6 +116,7 @@ class RequestScheduler:
                         and self._pending_retries == 0
                     ):
                         self._idle_condition.notify_all()
+
 
     def submit(self, job: Job) -> str:
         """Enqueue the job or reject it when the queue is overloaded."""
