@@ -8,3 +8,5 @@ venv/
 htmlcov/
 .env
 .vscode/
+*.db
+*.sqlite3

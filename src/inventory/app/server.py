@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from collections.abc import Sequence
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -14,8 +15,12 @@ from inventory.auth.models import Session, User
 from inventory.catalog.filters import ProductFilter
 
 
-def create_app(services: ApplicationServices) -> Any:
+def create_app(services: ApplicationServices | None = None) -> Any:
     """Create an HTTP app around an already-constructed service graph."""
+    if services is None:
+        from inventory.app.main import build_application
+        services = build_application()
+
     from flask import Flask, abort, jsonify, request
 
     app = Flask(__name__)
@@ -161,9 +166,14 @@ def create_app(services: ApplicationServices) -> Any:
 
 def main(argv: Sequence[str] | None = None) -> None:
     """Start the Flask development server using the shared application builder."""
+    env_port = os.environ.get("PORT")
+    env_host = os.environ.get("HOST")
+    default_port = int(env_port) if env_port else 5000
+    default_host = env_host if env_host else ("0.0.0.0" if env_port else "127.0.0.1")
+
     parser = argparse.ArgumentParser(description="Smart Inventory Management API")
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=5000)
+    parser.add_argument("--host", default=default_host)
+    parser.add_argument("--port", type=int, default=default_port)
     args = parser.parse_args(argv)
 
     try:

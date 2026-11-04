@@ -1,6 +1,5 @@
-"""Application composition root with CLI and backend-server launch modes."""
-
 import argparse
+import os
 from collections.abc import Sequence
 
 from inventory.auth.service import Authentication
@@ -60,10 +59,15 @@ def build_application() -> ApplicationServices:
 
 def main(argv: Sequence[str] | None = None) -> None:
     """Build shared services and launch either the CLI or HTTP backend."""
+    env_port = os.environ.get("PORT")
+    env_host = os.environ.get("HOST")
+    default_port = int(env_port) if env_port else 5000
+    default_host = env_host if env_host else ("0.0.0.0" if env_port else "127.0.0.1")
+
     parser = argparse.ArgumentParser(description="Smart Inventory Management System")
     parser.add_argument("--mode", choices=("cli", "server"), default="cli")
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=5000)
+    parser.add_argument("--host", default=default_host)
+    parser.add_argument("--port", type=int, default=default_port)
     args = parser.parse_args(argv)
 
     try:
