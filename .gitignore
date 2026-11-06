@@ -9,6 +9,7 @@ htmlcov/
 .env
 .vscode/
 *.db
+*.sqlite3
 *.db-shm
 *.db-wal
 .kiro/

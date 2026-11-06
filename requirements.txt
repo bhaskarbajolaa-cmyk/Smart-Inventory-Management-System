@@ -1,0 +1,4 @@
+# Requirements for deploying Smart Inventory Management System on Render
+-e .
+Flask>=3.0.0
+gunicorn>=21.2.0
