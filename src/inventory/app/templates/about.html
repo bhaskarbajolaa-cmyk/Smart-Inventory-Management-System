@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us | Mind Behind SMOभर</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/aboutdesign.css') }}">
+</head>
+<body>
+    <svg class="svg-filter-hidden">
+        <filter id="waterFilter">
+            <feTurbulence id="waterTurbulence" type="fractalNoise" baseFrequency="0.015 0.015" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="22" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+    </svg>
+
+    <div class="cursor-pattern-layer" id="smokePattern"></div>
+
+    <div class="navbar-wrap">
+        <header class="navbar">
+            <a href="{{ url_for('about') }}" class="nav-brand">
+                <img src="{{ url_for('static', filename='img/smobharlogo1.png') }}" alt="SMOभर logo" class="brand-logo">
+                <span class="brand-name">
+                    <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
+                </span>
+            </a>
+            <div class="nav-right-group">
+                <nav class="nav-links">
+                    <a href="{{ url_for('about') }}" class="active">About Us</a>
+                    <a href="{{ url_for('home') }}">Inventory Table</a>
+                    <a href="{{ url_for('workspace') }}">Workspace</a>
+                </nav>
+                <button type="button" class="logout-btn" id="logoutBtn">Log out</button>
+            </div>
+        </header>
+    </div>
+
+    <main class="about-container">
+        <section class="about-header-section">
+            <img src="{{ url_for('static', filename='img/smobharlogo1.png') }}" alt="SMOभर platform logo" class="about-hero-logo">
+            <h1 class="about-header-title">
+                Mind Behind <span class="brand-text">SMO</span><span class="brand-red">भर</span>
+            </h1>
+            <p class="about-header-subtitle">The innovators and core architects shaping smarter inventory management.</p>
+        </section>
+
+        <section class="team-cards-grid">
+            <article class="clean-team-card">
+                <div class="avatar-ring-container">
+                    <img src="{{ url_for('static', filename='img/artham.jpg') }}" alt="Artham Tyagi" class="avatar-image">
+                </div>
+                <h3 class="member-name">Artham Tyagi</h3>
+                <div class="member-title title-lead">Creative Director &amp; Lead Designer</div>
+                <p class="member-description">The creative force behind SMOभर. Crafted the brand identity, logo, user interface, and complete user workflow.</p>
+            </article>
+
+            <article class="clean-team-card">
+                <div class="avatar-ring-container">
+                    <img src="{{ url_for('static', filename='img/krishna.jpg') }}" alt="Krishna Tyagi" class="avatar-image">
+                </div>
+                <h3 class="member-name">Krishna Tyagi</h3>
+                <div class="member-title title-backend">Backend Developer</div>
+                <p class="member-description">Managed user session lifecycle, authentication verification, user repository persistence, and core end-to-end system connectivity.</p>
+            </article>
+
+            <article class="clean-team-card">
+                <div class="avatar-ring-container">
+                    <img src="{{ url_for('static', filename='img/bhaskar.jpeg') }}" alt="Bhaskar" class="avatar-image">
+                </div>
+                <h3 class="member-name">Bhaskar</h3>
+                <div class="member-title title-backend">Backend Developer</div>
+                <p class="member-description">Engineered transaction repository structures, database persistence contracts, and transactional rollback mechanisms for ledger consistency.</p>
+            </article>
+
+            <article class="clean-team-card">
+                <div class="avatar-ring-container">
+                    <img src="{{ url_for('static', filename='img/anubhav.jpeg') }}" alt="Anubhav Panwar" class="avatar-image">
+                </div>
+                <h3 class="member-name">Anubhav Panwar</h3>
+                <div class="member-title title-backend">Backend Developer</div>
+                <p class="member-description">Developed repository classes, defined domain schema structures for all catalog tables, and mapped business rules with persistence models.</p>
+            </article>
+
+            <article class="clean-team-card">
+                <div class="avatar-ring-container">
+                    <img src="{{ url_for('static', filename='img/mohit.jpeg') }}" alt="Mohit Purohit" class="avatar-image">
+                </div>
+                <h3 class="member-name">Mohit Purohit</h3>
+                <div class="member-title title-backend">Backend Developer</div>
+                <p class="member-description">Built thread-safe lock managers, priority job queues, intelligent retry algorithms, and request schedulers for high-throughput concurrency.</p>
+            </article>
+
+            <article class="clean-team-card">
+                <div class="avatar-ring-container">
+                    <img src="{{ url_for('static', filename='img/Ayush.jpg') }}" alt="Ayush Prajapati" class="avatar-image">
+                </div>
+                <h3 class="member-name">Ayush Prajapati</h3>
+                <div class="member-title" style="color:#64748b;">Credits</div>
+                <p class="member-description">Fine Tuning</p>
+            </article>
+        </section>
+    </main>
+
+    <footer class="site-footer" id="aboutFooter">
+        <div class="footer-top">
+            <h2 class="footer-main-title">Design by Artham</h2>
+            <a href="https://instagram.com/designwithartham" target="_blank" class="footer-social-link">
+                <span class="insta-icon-box">&#9825;</span>
+                <span>@designwithartham</span>
+            </a>
+        </div>
+        <div class="footer-divider"></div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h3>About Us</h3>
+                <ul>
+                    <li><a href="#">Our Story</a></li>
+                    <li><a href="#">Testimonials</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">What We Offer</a></li>
+                </ul>
+                <p class="footer-tagline">Crafting unscripted moments that turn strangers into a tribe.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Terms &amp; Info</h3>
+                <ul>
+                    <li><a href="#">Disclaimer</a></li>
+                    <li><a href="#">Terms &amp; Conditions</a></li>
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Cancellation</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom-bar">
+            <div class="footer-bottom-left">
+                <span class="footer-brand-mini">SMOभर</span>
+                <span>&copy; 2026 SAFARNAMA. All Rights Reserved.</span>
+            </div>
+            <div class="footer-bottom-right"><span>&#127760; ENG &middot; INR</span></div>
+        </div>
+    </footer>
+
+    <script>
+        const smokePattern = document.getElementById("smokePattern");
+        const turbulence = document.getElementById("waterTurbulence");
+        window.addEventListener("mousemove", (e) => {
+            smokePattern.style.setProperty("--mouse-x", e.clientX + "px");
+            smokePattern.style.setProperty("--mouse-y", e.clientY + "px");
+        });
+        let frame = 0;
+        function animateWater() {
+            frame += 0.008;
+            turbulence.setAttribute("baseFrequency", `${0.015+Math.sin(frame)*0.003} ${0.018+Math.cos(frame*0.8)*0.003}`);
+            requestAnimationFrame(animateWater);
+        }
+        animateWater();
+
+        document.getElementById("logoutBtn").addEventListener("click", async () => {
+            const t = sessionStorage.getItem("session_token");
+            if (t) { try { await fetch("/api/auth/logout", { method:"POST", headers:{"Authorization":"Bearer "+t} }); } catch {} }
+            sessionStorage.clear();
+            window.location.href = "{{ url_for('login') }}";
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Command | SMOभर</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admiviewdesign.css') }}">
+</head>
+<body>
+    <svg class="svg-filter-hidden">
+        <filter id="waterFilter">
+            <feTurbulence id="waterTurbulence" type="fractalNoise" baseFrequency="0.015 0.015" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="22" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+    </svg>
+
+    <div class="cursor-pattern-layer" id="smokePattern"></div>
+
+    <div class="navbar-wrap">
+        <header class="navbar">
+            <a href="{{ url_for('admin') }}" class="nav-brand">
+                <img src="{{ url_for('static', filename='img/smobharlogo1.png') }}" alt="SMOभर logo" class="brand-logo">
+                <span class="brand-name">
+                    <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
+                </span>
+            </a>
+            <div class="nav-right-group">
+                <nav class="nav-links">
+                    <a href="{{ url_for('about') }}">About us</a>
+                    <a href="{{ url_for('home') }}">Inventory Table</a>
+                    <button type="button" class="nav-link-btn" id="openViewUsersBtn">View Users</button>
+                </nav>
+                <span class="admin-tag">Admin Panel</span>
+                <button type="button" class="logout-btn" id="logoutBtn">Log out</button>
+            </div>
+        </header>
+    </div>
+
+    <main class="stage-container" id="heroStage">
+        <div class="stage-pill">
+            <span class="stage-pill-dot"></span>
+            <span>Enterprise Admin Control</span>
+        </div>
+        <h1 class="stage-title">Where Authority Meets <span>Pure Precision.</span></h1>
+        <p class="stage-desc">Authorize team members, configure enterprise roles, and audit access credentials across your entire workspace inventory.</p>
+
+        <div class="admin-action-row" id="actionTarget">
+            <div class="btn-aura-wrapper">
+                <button type="button" class="btn-action-base btn-add-user" id="openAddModalBtn">
+                    <span>+ Add New User</span>
+                </button>
+                <div class="action-ring action-ring-red"></div>
+            </div>
+            <div class="btn-aura-wrapper">
+                <button type="button" class="btn-action-base btn-move-workplace" id="moveWorkplaceBtn">
+                    <span>Move to Workplace</span>
+                    <span class="move-table-arrow">&rarr;</span>
+                </button>
+                <div class="action-ring action-ring-blue"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- User Directory Table Section -->
+    <section class="table-section" id="userDirectorySection">
+        <div class="top-navigation-bar">
+            <button type="button" class="btn-back-pill-prominent" id="closeTableBtn">Back</button>
+        </div>
+        <div class="table-glass-card">
+            <div class="table-header-bar">
+                <div class="table-header-left">
+                    <h3>Registered Users</h3>
+                    <p>Manage workspace permissions and credential authorizations</p>
+                </div>
+                <div class="table-controls">
+                    <input type="text" id="userSearchInput" class="table-search-input" placeholder="Search by name, username...">
+                    <div class="role-filter-group" id="roleFilterGroup">
+                        <button type="button" class="role-filter-btn active" data-filter="ALL">All Roles</button>
+                        <button type="button" class="role-filter-btn" data-filter="Admin">Admin</button>
+                        <button type="button" class="role-filter-btn" data-filter="Manager">Manager</button>
+                        <button type="button" class="role-filter-btn" data-filter="Supervisor">Supervisor</button>
+                    </div>
+                </div>
+            </div>
+            <div class="user-cards-grid" id="userCardsContainer">
+                <div class="user-row-card grid-header">
+                    <div>User Profile</div><div>Username</div><div>Assigned Role</div>
+                    <div>Account Status</div><div style="text-align:right;">Actions</div>
+                </div>
+                <div id="userRowsTarget"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal: Add User -->
+    <div class="modal-overlay" id="addModal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>+ Add New User</h3>
+                <button type="button" class="modal-close-btn" data-close="addModal">&times;</button>
+            </div>
+            <form id="addUserForm">
+                <div class="modal-body">
+                    <div class="form-field"><label for="addUsername">Username</label><input type="text" id="addUsername" class="field-input-box" placeholder="e.g. rahul_ops" required></div>
+                    <div class="form-field"><label for="addEmail">Email</label><input type="email" id="addEmail" class="field-input-box" placeholder="rahul@company.com" required></div>
+                    <div class="form-field">
+                        <label for="addPassword">Password</label>
+                        <div class="password-input-wrap">
+                            <input type="password" id="addPassword" class="field-input-box" placeholder="••••••••" required>
+                            <button type="button" class="toggle-eye" onclick="togglePass('addPassword')">&#128065;</button>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label>Select Role Permission</label>
+                        <input type="hidden" id="addRoleVal" value="Manager">
+                        <div class="role-cards-container" id="addRoleCards">
+                            <div class="role-choice-card" data-role="Admin" onclick="selectRoleChoice('add','Admin')"><span class="role-choice-title">Admin</span><span class="role-choice-desc">Full Control</span></div>
+                            <div class="role-choice-card selected-manager" data-role="Manager" onclick="selectRoleChoice('add','Manager')"><span class="role-choice-title">Manager</span><span class="role-choice-desc">Operations</span></div>
+                            <div class="role-choice-card" data-role="Supervisor" onclick="selectRoleChoice('add','Supervisor')"><span class="role-choice-title">Supervisor</span><span class="role-choice-desc">Audit &amp; View</span></div>
+                        </div>
+                    </div>
+                </div>
+                <p id="addUserError" class="message" style="color:#ea2330; font-size:12px; margin:0 24px;"></p>
+                <div class="modal-footer">
+                    <button type="button" class="btn-modal-cancel" data-close="addModal">Cancel</button>
+                    <button type="submit" class="btn-modal-submit-red" id="createUserBtn">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: View Details -->
+    <div class="modal-overlay" id="viewModal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>&#128065; User Details Inspector</h3>
+                <button type="button" class="modal-close-btn" data-close="viewModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-row"><span class="detail-key">Full Name</span><span class="detail-val" id="viewName">-</span></div>
+                <div class="detail-row"><span class="detail-key">Username</span><span class="detail-val" id="viewUsername">-</span></div>
+                <div class="detail-row"><span class="detail-key">Email</span><span class="detail-val" id="viewEmail">-</span></div>
+                <div class="detail-row"><span class="detail-key">Role</span><span class="detail-val" id="viewRole">-</span></div>
+                <div class="detail-row"><span class="detail-key">Account Status</span><span class="detail-val" id="viewStatus">-</span></div>
+
+                <div class="form-field" id="viewRoleEditor">
+                    <label>Change Role Permission</label>
+                    <input type="hidden" id="updateRoleVal" value="Manager">
+                    <div class="role-cards-container" id="updateRoleCards">
+                        <div class="role-choice-card" data-role="Admin" onclick="selectRoleChoice('update','Admin')"><span class="role-choice-title">Admin</span><span class="role-choice-desc">Full Control</span></div>
+                        <div class="role-choice-card" data-role="Manager" onclick="selectRoleChoice('update','Manager')"><span class="role-choice-title">Manager</span><span class="role-choice-desc">Operations</span></div>
+                        <div class="role-choice-card" data-role="Supervisor" onclick="selectRoleChoice('update','Supervisor')"><span class="role-choice-title">Supervisor</span><span class="role-choice-desc">Audit &amp; View</span></div>
+                    </div>
+                </div>
+                <p class="message" id="updateUserError"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-cancel" data-close="viewModal">Close</button>
+                <button type="button" class="btn-modal-submit-red" id="saveUserBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer" id="aboutFooter">
+        <div class="footer-top">
+            <h2 class="footer-main-title">Design by Artham</h2>
+            <a href="https://instagram.com/designwithartham" target="_blank" class="footer-social-link">
+                <span class="insta-icon-box">&#9825;</span><span>@designwithartham</span>
+            </a>
+        </div>
+        <div class="footer-divider"></div>
+        <div class="footer-columns">
+            <div class="footer-col">
+                <h3>About Us</h3>
+                <ul><li><a href="#">Our Story</a></li><li><a href="#">Careers</a></li><li><a href="#">What We Offer</a></li></ul>
+                <p class="footer-tagline">Crafting unscripted moments that turn strangers into a tribe.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Terms &amp; Info</h3>
+                <ul><li><a href="#">Disclaimer</a></li><li><a href="#">Terms &amp; Conditions</a></li><li><a href="#">Privacy</a></li></ul>
+            </div>
+        </div>
+        <div class="footer-bottom-bar">
+            <div class="footer-bottom-left"><span class="footer-brand-mini">SMOभर</span><span>&copy; 2026 SAFARNAMA. All Rights Reserved.</span></div>
+            <div class="footer-bottom-right"><span>&#127760; ENG &middot; INR</span></div>
+        </div>
+    </footer>
+
+    <div class="toast-notice" id="toastNotice">Action Completed Successfully</div>
+
+    <script>
+        // ── Auth guard ──
+        if (!sessionStorage.getItem("session_token")) {
+            window.location.href = "{{ url_for('login') }}";
+        }
+
+        // Water ripple
+        const smokePattern = document.getElementById("smokePattern");
+        const turbulence = document.getElementById("waterTurbulence");
+        window.addEventListener("mousemove", (e) => {
+            smokePattern.style.setProperty("--mouse-x", e.clientX + "px");
+            smokePattern.style.setProperty("--mouse-y", e.clientY + "px");
+        });
+        let frame = 0;
+        function animateWater() {
+            frame += 0.008;
+            turbulence.setAttribute("baseFrequency", `${0.015+Math.sin(frame)*0.003} ${0.018+Math.cos(frame*0.8)*0.003}`);
+            requestAnimationFrame(animateWater);
+        }
+        animateWater();
+
+        function showToast(msg) { const t = document.getElementById("toastNotice"); t.textContent = msg; t.style.display = "block"; setTimeout(() => { t.style.display = "none"; }, 3000); }
+        function togglePass(id) { const i = document.getElementById(id); i.type = i.type === "password" ? "text" : "password"; }
+
+        // ── User data — tries API first, falls back to localStorage ──
+        const ROLE_NAMES = { 1: "Admin", 2: "Manager", 3: "Supervisor" };
+        const ROLE_IDS = { Admin: 1, Manager: 2, Supervisor: 3 };
+
+        function authHeader() {
+            return { "Authorization": "Bearer " + sessionStorage.getItem("session_token"), "Content-Type": "application/json" };
+        }
+
+        async function fetchUsersFromAPI() {
+            try {
+                const res = await fetch("/api/users", { headers: authHeader() });
+                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return null; }
+                if (!res.ok) return null;
+                const data = await res.json();
+                // Normalise to match local user shape
+                return data.map(u => ({
+                    name: u.username,
+                    username: u.username,
+                    email: u.email || "",
+                    role: ROLE_NAMES[u.role_id] || "User",
+                    role_id: u.role_id,
+                    status: "Active",
+                    user_id: u.user_id,
+                }));
+            } catch { return null; }
+        }
+
+        // Local store (fallback / admin-panel-only additions)
+        const defaultUsers = [
+            { name:"Artham Tyagi", username:"artham_admin", email:"tyagiartham31@gmail.com", role:"Admin", status:"Active" },
+            { name:"Krishna Tyagi", username:"krishna_dev", email:"tyagikrishna1234@gmail.com", role:"Admin", status:"Active" },
+        ];
+
+        function getLocalUsers() {
+            const d = localStorage.getItem("smobhar_admin_users");
+            if (!d) { localStorage.setItem("smobhar_admin_users", JSON.stringify(defaultUsers)); return defaultUsers; }
+            try { return JSON.parse(d).map(u=>({status:"Active",...u})); } catch { return defaultUsers; }
+        }
+        function saveLocalUsers(u) { localStorage.setItem("smobhar_admin_users", JSON.stringify(u)); }
+
+        let _cachedUsers = null;
+
+        async function getUsers() {
+            if (_cachedUsers) return _cachedUsers;
+            const apiUsers = await fetchUsersFromAPI();
+            _cachedUsers = apiUsers || getLocalUsers();
+            return _cachedUsers;
+        }
+
+        function saveUsers(u) {
+            _cachedUsers = u;
+            saveLocalUsers(u);
+            renderUsers();
+        }
+
+        // Trigger initial render
+        getUsers().then(() => renderUsers());
+
+        let currentRoleFilter = "ALL";
+
+        async function renderUsers() {
+            const users = await getUsers();
+            const target = document.getElementById("userRowsTarget");
+            const search = document.getElementById("userSearchInput").value.toLowerCase();
+            target.innerHTML = "";
+            const filtered = users.filter(u => {
+                const matchSearch = u.name.toLowerCase().includes(search) || u.username.toLowerCase().includes(search) || u.email.toLowerCase().includes(search);
+                const matchRole = currentRoleFilter === "ALL" || u.role === currentRoleFilter;
+                return matchSearch && matchRole;
+            });
+            if (filtered.length === 0) { target.innerHTML = `<div style="text-align:center;padding:32px;color:#64748b;font-weight:600;">No matching users found.</div>`; return; }
+            filtered.forEach(user => {
+                const div = document.createElement("div");
+                div.className = "user-row-card";
+                const roleClass = user.role === "Admin" ? "role-admin" : user.role === "Supervisor" ? "role-supervisor" : "role-manager";
+                const isActive = user.status !== "Inactive";
+                div.innerHTML = `
+                    <div class="user-meta-cell">
+                        <div class="user-avatar">${user.name.charAt(0).toUpperCase()}</div>
+                        <div><div class="user-name-title">${user.name}</div><div class="user-sub-email">${user.email}</div></div>
+                    </div>
+                    <div><span class="username-tag">@${user.username}</span></div>
+                    <div><span class="role-badge ${roleClass}">${user.role}</span></div>
+                    <div>
+                        <button type="button" class="status-pill-btn ${isActive?'active-status':'inactive-status'}" onclick="toggleUserStatus('${user.username}')">
+                            <span class="status-dot ${isActive?'status-dot-active':'status-dot-inactive'}"></span>
+                            <span>${isActive?'Active':'Inactive'}</span>
+                        </button>
+                    </div>
+                    <div><div class="action-btn-group">
+                        <button type="button" class="btn-view-usr" onclick="viewUser('${user.username}')">&#128065; View</button>
+                        <button type="button" class="btn-del-usr" onclick="deleteUser('${user.username}')">&#128465; Delete</button>
+                    </div></div>`;
+                target.appendChild(div);
+            });
+        }
+
+        async function toggleUserStatus(username) {
+            const users = await getUsers();
+            const idx = users.findIndex(u => u.username === username);
+            if (idx === -1) return;
+            users[idx].status = users[idx].status === "Active" ? "Inactive" : "Active";
+            saveUsers(users);
+            showToast(`@${username} is now ${users[idx].status}.`);
+        }
+
+        let viewingUserId = null;
+
+        async function viewUser(username) {
+            const users = await getUsers();
+            const user = users.find(u => u.username === username);
+            if (!user) return;
+            viewingUserId = user.user_id ?? null;
+            document.getElementById("viewName").textContent = user.name;
+            document.getElementById("viewUsername").textContent = user.username;
+            document.getElementById("viewEmail").textContent = user.email;
+            document.getElementById("viewRole").textContent = user.role;
+            document.getElementById("viewStatus").textContent = user.status;
+
+            const errEl = document.getElementById("updateUserError");
+            errEl.textContent = ""; errEl.className = "message";
+
+            const editor = document.getElementById("viewRoleEditor");
+            const saveBtn = document.getElementById("saveUserBtn");
+            const isSelf = String(viewingUserId) === sessionStorage.getItem("user_id");
+            const editable = viewingUserId != null && !isSelf;
+            editor.style.display = editable ? "" : "none";
+            saveBtn.style.display = editable ? "" : "none";
+            if (editable) selectRoleChoice("update", user.role);
+            openModal("viewModal");
+        }
+
+        document.getElementById("saveUserBtn").addEventListener("click", async () => {
+            if (viewingUserId == null) return;
+            const errEl = document.getElementById("updateUserError");
+            const btn = document.getElementById("saveUserBtn");
+            const role = document.getElementById("updateRoleVal").value;
+            const role_id = ROLE_IDS[role];
+            if (role_id == null) { errEl.textContent = "Select a role first."; errEl.className = "message error"; return; }
+
+            errEl.textContent = ""; errEl.className = "message";
+            btn.disabled = true;
+            try {
+                const res = await fetch(`/api/admin/users/${viewingUserId}`, {
+                    method: "PUT",
+                    headers: authHeader(),
+                    body: JSON.stringify({ role_id })
+                });
+                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return; }
+                if (res.status === 403) { errEl.textContent = "You do not have permission to update users."; errEl.className = "message error"; return; }
+                if (res.status === 404) { errEl.textContent = "User not found. They may have been deleted."; errEl.className = "message error"; refreshUsers(); return; }
+                if (!res.ok) { errEl.textContent = await errorDescription(res, "Could not update this user."); errEl.className = "message error"; return; }
+
+                const saved = await res.json();
+                showToast(`@${saved.username} is now ${ROLE_NAMES[saved.role_id] || saved.role_id}.`);
+                closeModal("viewModal");
+                refreshUsers();
+            } catch {
+                errEl.textContent = "Network error."; errEl.className = "message error";
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        async function errorDescription(res, fallback) {
+            const d = await res.json().catch(() => ({}));
+            return d.description || fallback;
+        }
+
+        function refreshUsers() {
+            _cachedUsers = null;
+            return getUsers().then(() => renderUsers());
+        }
+
+        async function deleteUser(username) {
+            const users = await getUsers();
+            const user = users.find(u => u.username === username);
+            if (!user) { showToast("User not found. They may have already been deleted."); refreshUsers(); return; }
+            if (!confirm(`Delete user @${username}?`)) return;
+
+            // Users that only exist in the localStorage fallback have no user_id.
+            if (user.user_id == null) {
+                saveUsers(users.filter(u => u.username !== username));
+                showToast(`@${username} deleted.`);
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/admin/users/" + user.user_id, { method: "DELETE", headers: authHeader() });
+                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return; }
+                if (res.status === 403) { showToast(await errorDescription(res, "You do not have permission to delete users.")); return; }
+                if (res.status === 404) { showToast("User not found. They may have already been deleted."); refreshUsers(); return; }
+                if (!res.ok) { showToast(await errorDescription(res, "Could not delete this user.")); return; }
+                showToast(`@${username} deleted!`);
+                refreshUsers();
+            } catch {
+                showToast("Could not reach the server. Please try again.");
+            }
+        }
+
+        document.querySelectorAll(".role-filter-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".role-filter-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active"); currentRoleFilter = btn.dataset.filter; renderUsers();
+            });
+        });
+
+        function selectRoleChoice(context, role) {
+            const containerId = context === "add" ? "addRoleCards" : "updateRoleCards";
+            const hiddenId = context === "add" ? "addRoleVal" : "updateRoleVal";
+            document.getElementById(containerId).querySelectorAll(".role-choice-card").forEach(card => {
+                card.classList.remove("selected-admin","selected-manager","selected-supervisor");
+                if (card.dataset.role === role) card.classList.add(`selected-${role.toLowerCase()}`);
+            });
+            document.getElementById(hiddenId).value = role;
+        }
+
+        function openModal(id) { const m = document.getElementById(id); m.classList.add("active"); m.setAttribute("aria-hidden","false"); }
+        function closeModal(id) { const m = document.getElementById(id); m.classList.remove("active"); m.setAttribute("aria-hidden","true"); }
+
+        document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close"))));
+        document.querySelectorAll(".modal-overlay").forEach(o => o.addEventListener("click", (e) => { if (e.target === o) closeModal(o.id); }));
+
+        document.getElementById("openAddModalBtn").addEventListener("click", () => { document.getElementById("addUserForm").reset(); selectRoleChoice('add','Manager'); openModal("addModal"); });
+        document.getElementById("addUserForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const errEl = document.getElementById("addUserError");
+            const btn = document.getElementById("createUserBtn");
+            const username = document.getElementById("addUsername").value.trim().toLowerCase();
+            const email = document.getElementById("addEmail").value.trim().toLowerCase();
+            const password = document.getElementById("addPassword").value;
+            const role = document.getElementById("addRoleVal").value || "Manager";
+            errEl.textContent = "";
+
+            btn.disabled = true;
+            try {
+                const res = await fetch("/api/admin/users", {
+                    method: "POST",
+                    headers: authHeader(),
+                    body: JSON.stringify({ username, email, password, role_id: ROLE_IDS[role] ?? 2 })
+                });
+                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return; }
+                if (res.status === 403) { errEl.textContent = "You do not have permission to create users."; return; }
+                if (res.status === 409) { errEl.textContent = "This username already exists. Choose a unique one."; return; }
+                if (!res.ok) { errEl.textContent = await errorDescription(res, "Could not create this user. Please check the values."); return; }
+
+                showToast(`User @${username} added!`);
+                closeModal("addModal");
+                refreshUsers();
+            } catch {
+                errEl.textContent = "Could not reach the server. Please try again.";
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById("moveWorkplaceBtn").addEventListener("click", () => { showToast("Opening Workplace..."); setTimeout(() => { window.location.href = "{{ url_for('workspace') }}"; }, 450); });
+
+        const openViewUsersBtn = document.getElementById("openViewUsersBtn");
+        const heroStage = document.getElementById("heroStage");
+        const userDirectorySection = document.getElementById("userDirectorySection");
+        const closeTableBtn = document.getElementById("closeTableBtn");
+
+        openViewUsersBtn.addEventListener("click", () => { renderUsers(); openViewUsersBtn.classList.add("highlighted"); heroStage.classList.add("hide-stage"); userDirectorySection.classList.add("active"); userDirectorySection.scrollIntoView({behavior:"smooth"}); });
+        closeTableBtn.addEventListener("click", () => { openViewUsersBtn.classList.remove("highlighted"); heroStage.classList.remove("hide-stage"); userDirectorySection.classList.remove("active"); window.scrollTo({top:0,behavior:"smooth"}); });
+        document.getElementById("userSearchInput").addEventListener("input", renderUsers);
+
+        document.getElementById("logoutBtn").addEventListener("click", async () => {
+            const t = sessionStorage.getItem("session_token");
+            if (t) { try { await fetch("/api/auth/logout", { method:"POST", headers:{"Authorization":"Bearer "+t} }); } catch {} }
+            sessionStorage.clear();
+            window.location.href = "{{ url_for('login') }}";
+        });
+
+        // ── Admin gate ──
+        // Every admin endpoint already returns 403 without the ADMIN permission;
+        // this only removes controls that would otherwise look broken.
+        async function enforceAdminAccess() {
+            let perms = [];
+            try {
+                const res = await fetch("/api/auth/me", { headers: authHeader() });
+                if (res.status === 401) {
+                    sessionStorage.clear();
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+                if (res.ok) perms = (await res.json()).permissions || [];
+            } catch { return; }
+
+            if (perms.includes("ADMIN")) return;
+
+            ["openViewUsersBtn", "openAddModalBtn"].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = "none";
+            });
+            const banner = document.createElement("div");
+            banner.className = "message error";
+            banner.style.cssText = "margin:16px auto;max-width:640px;text-align:center;font-weight:600;";
+            banner.textContent = "You do not have admin permission to view users.";
+            document.querySelector("main")?.prepend(banner);
+        }
+
+        enforceAdminAccess();
+    </script>
+</body>
+</html>

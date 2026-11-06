@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 from collections.abc import Sequence
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -15,15 +17,48 @@ from inventory.auth.models import Session, User
 from inventory.catalog.filters import ProductFilter
 
 
+EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
+
+
 def create_app(services: ApplicationServices | None = None) -> Any:
     """Create an HTTP app around an already-constructed service graph."""
     if services is None:
         from inventory.app.main import build_application
         services = build_application()
 
+    import os
     from flask import Flask, abort, jsonify, request
 
-    app = Flask(__name__)
+    # Resolve templates/ and static/ relative to this file (src/inventory/app/)
+    _here = os.path.dirname(os.path.abspath(__file__))
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(_here, "templates"),
+        static_folder=os.path.join(_here, "static"),
+        static_url_path="/static",
+    )
+
+    # Register frontend page routes
+    from inventory.app.web import register_page_routes
+    register_page_routes(app)
+
+    from werkzeug.exceptions import HTTPException
+
+    @app.errorhandler(HTTPException)
+    def api_http_error(error: HTTPException) -> Any:
+        """Return JSON bodies for /api/ errors so the frontend can read `description`."""
+        if request.path.startswith("/api/"):
+            return jsonify({"error": error.name, "description": error.description}), error.code
+        return error.get_response(request)
+
+    @app.errorhandler(Exception)
+    def api_unexpected_error(error: Exception) -> Any:
+        """Convert unhandled exceptions on /api/ into JSON 500 responses."""
+        if isinstance(error, HTTPException) or not request.path.startswith("/api/"):
+            return error
+        return jsonify({"error": "Internal Server Error", "description": str(error)}), 500
+
+    from flask import abort, jsonify, request
 
     def require_session() -> Session:
         authorization = request.headers.get("Authorization", "")
@@ -62,13 +97,223 @@ def create_app(services: ApplicationServices | None = None) -> Any:
             "updated_at": product.updated_at.isoformat(),
         }
 
+    PRODUCT_WRITE_FIELDS = ("name", "sku", "category", "quantity", "reorder_level", "unit_price", "supplier_id")
+
+    def sku_taken(sku: str, exclude_product_id: int | None = None) -> bool:
+        """Return True when another product row already owns the given SKU."""
+        sql = "SELECT product_id FROM products WHERE sku = ?"
+        params: list[Any] = [sku]
+        if exclude_product_id is not None:
+            sql += " AND product_id <> ?"
+            params.append(exclude_product_id)
+        return bool(services.database_manager.execute_query(sql, params))
+
+    def product_from_payload(payload: dict[str, Any], product_id: int) -> Any:
+        """Validate a product request body and map it onto the Product model."""
+        from inventory.catalog.models import Product
+
+        missing = [
+            field
+            for field in PRODUCT_WRITE_FIELDS
+            if payload.get(field) is None or payload.get(field) == ""
+        ]
+        if missing:
+            abort(400, description="Missing or empty required field(s): " + ", ".join(missing) + ".")
+
+        def as_int(field: str) -> int:
+            try:
+                return int(payload[field])
+            except (TypeError, ValueError):
+                abort(400, description=f"{field} must be an integer.")
+
+        try:
+            unit_price = Decimal(str(payload["unit_price"]))
+        except InvalidOperation:
+            abort(400, description="unit_price must be a decimal number.")
+
+        supplier_id = as_int("supplier_id")
+        if services.supplier_repository.find_by_id(supplier_id) is None:
+            abort(400, description=f"Supplier ID {supplier_id} does not exist. Choose one of the listed suppliers.")
+
+        try:
+            return Product(
+                product_id=product_id,
+                name=str(payload["name"]).strip(),
+                sku=str(payload["sku"]).strip(),
+                category=str(payload["category"]).strip(),
+                quantity=as_int("quantity"),
+                reorder_level=as_int("reorder_level"),
+                unit_price=unit_price,
+                supplier_id=supplier_id,
+                updated_at=datetime.now(),
+            )
+        except ValueError as error:
+            abort(400, description=str(error))
+
+    @app.get("/api/users")
+    def list_users() -> Any:
+        require_permission("ADMIN", "users")
+        users = services.user_repository.find_all()
+        return jsonify([
+            {
+                "user_id": u.user_id,
+                "username": u.username,
+                "email": u.email,
+                "role_id": u.role_id,
+                "created_at": u.created_at.isoformat() if hasattr(u.created_at, "isoformat") else str(u.created_at),
+            }
+            for u in users
+        ])
+
+    @app.post("/api/admin/users")
+    def create_admin_user() -> Any:
+        require_permission("ADMIN", "users")
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+
+        username = payload.get("username")
+        email = payload.get("email", "")
+        password = payload.get("password")
+        role_id = payload.get("role_id")
+
+        if not isinstance(username, str) or not username.strip():
+            abort(400, description="username must be a non-empty string.")
+        if not isinstance(password, str) or len(password) < 8:
+            abort(400, description="password must be at least 8 characters.")
+        if not isinstance(email, str) or not EMAIL_PATTERN.fullmatch(email.strip()):
+            abort(400, description="email must be a valid email address.")
+        try:
+            role_id = int(role_id)
+        except (TypeError, ValueError):
+            abort(400, description="role_id must be an integer.")
+        if services.role_repository.find_by_id(role_id) is None:
+            abort(400, description=f"role_id {role_id} does not match an existing role.")
+
+        try:
+            user = services.authentication.register(
+                username=username.strip(),
+                email=email.strip(),
+                password=password,
+                role_id=role_id,
+            )
+        except ValueError as exc:
+            abort(409, description=str(exc))
+
+        return jsonify(
+            {"user_id": user.user_id, "username": user.username, "email": user.email, "role_id": user.role_id}
+        ), 201
+
+    @app.put("/api/admin/users/<int:user_id>")
+    def update_admin_user(user_id: int) -> Any:
+        """Update a user's username, email or role. Only supplied fields change."""
+        admin, _role = require_permission("ADMIN", "users")
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+
+        user = services.user_repository.find_by_id(user_id)
+        if user is None:
+            abort(404, description="User not found.")
+
+        unknown = set(payload) - {"username", "email", "role_id"}
+        if unknown:
+            abort(400, description=f"Unsupported field(s): {', '.join(sorted(unknown))}.")
+        if not payload:
+            abort(400, description="Provide at least one field to update.")
+
+        if "username" in payload:
+            username = payload["username"]
+            if not isinstance(username, str) or not username.strip():
+                abort(400, description="username must be a non-empty string.")
+            clash = services.user_repository.find_by_username(username.strip())
+            if clash is not None and clash.user_id != user_id:
+                abort(409, description=f"Username '{username.strip()}' is already taken.")
+            user.username = username.strip()
+
+        if "email" in payload:
+            email = payload["email"]
+            if not isinstance(email, str) or not EMAIL_PATTERN.fullmatch(email.strip()):
+                abort(400, description="email must be a valid email address.")
+            user.email = email.strip()
+
+        if "role_id" in payload:
+            try:
+                role_id = int(payload["role_id"])
+            except (TypeError, ValueError):
+                abort(400, description="role_id must be an integer.")
+            if services.role_repository.find_by_id(role_id) is None:
+                abort(400, description=f"role_id {role_id} does not match an existing role.")
+            if user.user_id == admin.user_id and role_id != admin.role_id:
+                abort(403, description="You cannot change your own role.")
+            user.role_id = role_id
+
+        updated = services.user_repository.save(user)
+        return jsonify(
+            {
+                "user_id": updated.user_id,
+                "username": updated.username,
+                "email": updated.email,
+                "role_id": updated.role_id,
+            }
+        )
+
+    @app.delete("/api/admin/users/<int:user_id>")
+    def delete_admin_user(user_id: int) -> Any:
+        user, _role = require_permission("ADMIN", "users")
+        if user.user_id == user_id:
+            abort(403, description="You cannot delete yourself.")
+
+        # stock_transactions.user_id has no ON DELETE action, so a user with an
+        # audit trail cannot be removed without orphaning those rows.
+        rows = services.database_manager.execute_query(
+            "SELECT COUNT(*) AS count FROM stock_transactions WHERE user_id = ?", (user_id,)
+        )
+        if rows and int(rows[0]["count"]) > 0:
+            abort(409, description="This user has stock transactions on record and cannot be deleted.")
+
+        try:
+            services.user_repository.delete(user_id)
+        except KeyError:
+            abort(404, description="User not found.")
+        return "", 204
+
     @app.get("/health")
     def health() -> Any:
         """Report that the HTTP process is serving requests."""
         return jsonify({"status": "ok"})
 
+    @app.post("/api/auth/register")
+    def register() -> Any:
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+
+        username = payload.get("username")
+        email = payload.get("email", "")
+        password = payload.get("password")
+
+        if not isinstance(username, str) or not username.strip():
+            abort(400, description="username must be a non-empty string.")
+        if not isinstance(password, str) or len(password) < 8:
+            abort(400, description="password must be at least 8 characters.")
+        if not isinstance(email, str):
+            email = ""
+
+        try:
+            user = services.authentication.register(
+                username=username.strip(),
+                email=email.strip(),
+                password=password,
+                role_id=3,  # Supervisor (read-only) — an admin promotes from the panel
+            )
+        except ValueError as exc:
+            abort(409, description=str(exc))
+
+        return jsonify({"user_id": user.user_id, "username": user.username, "role_id": user.role_id}), 201
+
     @app.post("/api/auth/login")
-    def login() -> Any:
+    def api_login() -> Any:
         payload = request.get_json(silent=True)
         if not isinstance(payload, dict):
             abort(400, description="Expected a JSON object.")
@@ -98,6 +343,34 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         services.authentication.logout(session)
         return "", 204
 
+    @app.get("/api/auth/me")
+    def current_user() -> Any:
+        """Report the session user's role and permission codes for UI gating."""
+        session = require_session()
+        user = services.user_repository.find_by_id(session.user_id)
+        if user is None:
+            abort(401, description="The session user no longer exists.")
+        role = services.role_repository.find_by_id(user.role_id)
+        if role is None:
+            abort(403, description="The user's role no longer exists.")
+
+        codes = sorted(
+            {
+                grant.permission.code
+                for grant in role.grants
+                if grant.permission is not None and grant.applies_to(None)
+            }
+        )
+        return jsonify(
+            {
+                "user_id": user.user_id,
+                "username": user.username,
+                "role_id": user.role_id,
+                "role_name": role.role_name,
+                "permissions": codes,
+            }
+        )
+
     @app.get("/api/products")
     def list_products() -> Any:
         require_permission("VIEW", "products")
@@ -120,6 +393,14 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         products = services.product_repository.find_all(filters)
         return jsonify([product_payload(product) for product in products])
 
+    @app.get("/api/suppliers")
+    def list_suppliers() -> Any:
+        require_permission("VIEW", "suppliers")
+        return jsonify([
+            {"supplier_id": s.supplier_id, "name": s.name}
+            for s in services.supplier_repository.find_all()
+        ])
+
     @app.get("/api/products/<int:product_id>")
     def get_product(product_id: int) -> Any:
         require_permission("VIEW", "products")
@@ -127,6 +408,49 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         if product is None:
             abort(404, description="Product not found.")
         return jsonify(product_payload(product))
+
+    @app.post("/api/products")
+    def create_product() -> Any:
+        require_permission("APPEND", "products")
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+
+        product = product_from_payload(payload, product_id=0)
+        if sku_taken(product.sku):
+            abort(409, description="A product with this SKU already exists.")
+
+        created = services.product_repository.save(product)
+        return jsonify(product_payload(created)), 201
+
+    @app.put("/api/products/<int:product_id>")
+    def update_product(product_id: int) -> Any:
+        require_permission("EDIT", "products")
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+
+        existing = services.product_repository.find_by_id(product_id)
+        if existing is None:
+            abort(404, description="Product not found.")
+
+        product = product_from_payload(payload, product_id=product_id)
+        if sku_taken(product.sku, exclude_product_id=product_id):
+            abort(409, description="A product with this SKU already exists.")
+
+        updated = services.product_repository.save(product)
+        return jsonify(product_payload(updated))
+
+    @app.delete("/api/products/<int:product_id>")
+    def delete_product(product_id: int) -> Any:
+        require_permission("DELETE", "products")
+        try:
+            services.product_repository.delete(product_id)
+        except KeyError:
+            abort(404, description="Product not found.")
+        except ValueError as error:
+            abort(409, description=str(error))
+        return "", 204
 
     @app.post("/api/sales")
     def submit_sale() -> Any:

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#202024">
+    <title>Sign Up | SMOभर</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="color-wash"></div>
+
+    <div class="navbar-wrap">
+        <header class="navbar">
+            <a href="{{ url_for('login') }}" class="nav-brand">
+                <img src="{{ url_for('static', filename='img/smobharlogo1.png') }}" alt="SMOभर logo" class="brand-logo">
+                <span class="brand-name">
+                    <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
+                </span>
+            </a>
+            <nav class="nav-links">
+                <a href="{{ url_for('about') }}">About us</a>
+                <a href="#support">Support</a>
+            </nav>
+        </header>
+    </div>
+
+    <main class="hero-wrapper">
+        <section class="auth-card">
+            <div class="form-panel">
+                <div class="form-content">
+                    <h1>Get Started Now</h1>
+
+                    <form id="signupForm" style="margin-top: 24px;">
+                        <label for="fullName">Name</label>
+                        <div class="input-box">
+                            <input type="text" id="fullName" placeholder="Enter your name" autocomplete="name" required>
+                        </div>
+
+                        <label for="signupUsername">Username</label>
+                        <div class="input-box">
+                            <input type="text" id="signupUsername" placeholder="Enter your username" autocomplete="username" required>
+                        </div>
+
+                        <label for="signupEmail">Email <span style="font-weight:400; color:#9ca3af;">(optional)</span></label>
+                        <div class="input-box">
+                            <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email">
+                        </div>
+
+                        <label for="signupPassword">Password</label>
+                        <div class="input-box">
+                            <span class="field-icon" aria-hidden="true">&#128274;</span>
+                            <input type="password" id="signupPassword" placeholder="••••••••" minlength="8" autocomplete="new-password" required>
+                        </div>
+
+                        <p class="message" id="signupMessage" role="status" aria-live="polite"></p>
+
+                        <button type="submit" class="btn-red" id="signupBtn">
+                            <span class="btn-shine"></span>
+                            <span>Sign up</span>
+                            <span class="btn-arrow">&rarr;</span>
+                        </button>
+
+                        <p class="bottom-switch">
+                            Already have an account? <a href="{{ url_for('login') }}">Login Account!</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <aside class="art-panel">
+                <img src="{{ url_for('static', filename='img/Login1.png') }}" alt="SMOभर visual" class="art-panel-img">
+            </aside>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-top">
+            <h2 class="footer-main-title">Design by Artham</h2>
+            <a href="https://instagram.com/designwithartham" target="_blank" class="footer-social-link">
+                <span class="insta-icon-box">&#9825;</span>
+                <span>@designwithartham</span>
+            </a>
+        </div>
+        <div class="footer-divider"></div>
+        <div class="footer-columns">
+            <div class="footer-col" id="about">
+                <h3>About Us</h3>
+                <ul>
+                    <li><a href="#about">Our Story</a></li>
+                    <li><a href="#about">Testimonials</a></li>
+                    <li><a href="#about">Careers</a></li>
+                    <li><a href="#about">What We Offer</a></li>
+                </ul>
+                <p class="footer-tagline">Crafting unscripted moments that turn strangers into a tribe.</p>
+            </div>
+            <div class="footer-col" id="support">
+                <h3>Support</h3>
+                <ul>
+                    <li><a href="#support">Contact Us</a></li>
+                    <li><a href="#support">Feedback Form</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Terms &amp; Info</h3>
+                <ul>
+                    <li><a href="#">Disclaimer</a></li>
+                    <li><a href="#">Terms &amp; Conditions</a></li>
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Cancellation</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom-bar">
+            <div class="footer-bottom-left">
+                <span class="footer-brand-mini">SMOभर</span>
+                <span>&copy; 2026 SAFARNAMA. All Rights Reserved.</span>
+            </div>
+            <div class="footer-bottom-right"><span>&#127760; ENG &middot; INR</span></div>
+        </div>
+    </footer>
+
+    <script>
+        function triggerColorBurst() {
+            document.body.classList.remove("color-burst");
+            void document.body.offsetWidth;
+            document.body.classList.add("color-burst");
+            setTimeout(() => document.body.classList.remove("color-burst"), 1000);
+        }
+
+        const signupForm = document.getElementById("signupForm");
+        const signupMessage = document.getElementById("signupMessage");
+        const signupBtn = document.getElementById("signupBtn");
+
+        function showMessage(msg, type) {
+            signupMessage.textContent = msg;
+            signupMessage.className = "message " + type;
+        }
+
+        signupForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            triggerColorBurst();
+
+            const username = document.getElementById("signupUsername").value.trim();
+            const password = document.getElementById("signupPassword").value;
+            const emailEl  = document.getElementById("signupEmail");
+            const email    = emailEl ? emailEl.value.trim() : "";
+
+            if (!username) { showMessage("Username is required.", "error"); return; }
+            if (password.length < 8) { showMessage("Password must be at least 8 characters.", "error"); return; }
+
+            signupBtn.disabled = true;
+            try {
+                const res = await fetch("/api/auth/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, email, password })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 201) {
+                    showMessage("Account created! Redirecting to login...", "success");
+                    setTimeout(() => { window.location.href = "{{ url_for('login') }}"; }, 800);
+                } else if (res.status === 409) {
+                    showMessage(data.description || "Username already taken.", "error");
+                } else {
+                    showMessage(data.description || "An unexpected error occurred.", "error");
+                }
+            } catch {
+                showMessage("Network error. Please try again.", "error");
+            } finally {
+                signupBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
