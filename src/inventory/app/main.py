@@ -1,7 +1,9 @@
 """Application composition root with CLI and backend-server launch modes."""
 
 import argparse
+import sys
 from collections.abc import Sequence
+from pathlib import Path
 
 from inventory.auth.service import Authentication
 from inventory.concurrency.locks import LockManager
@@ -18,10 +20,47 @@ from inventory.app.services import ApplicationServices
 from inventory.transactions.models import TransactionContext
 
 
+def _run_seed(database_manager: "DatabaseManager") -> None:
+    """Run the seeder using the already-connected DatabaseManager.
+
+    Adds the scripts/ directory to sys.path so seed_data can be imported
+    whether the app is launched from the project root or from elsewhere.
+    """
+    scripts_dir = str(Path(__file__).resolve().parent.parent.parent.parent / "scripts")
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+
+    # The seeder prints non-ASCII marks that crash Windows' default cp1252 console.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")
+
+    try:
+        import seed_data  # type: ignore[import]
+
+        # Reuse the already-connected singleton instead of opening a new connection
+        from inventory.persistence.database import DatabaseManager as _DM
+        _DM._instance = database_manager  # ensure seed uses our instance
+
+        perm_ids = seed_data.seed_permissions(database_manager)
+        seed_data.seed_admin_role(database_manager, perm_ids)
+        seed_data.seed_manager_role(database_manager, perm_ids)
+        seed_data.seed_supervisor_role(database_manager, perm_ids)
+        seed_data.seed_default_admin_user(database_manager)
+        supplier_ids = seed_data.seed_suppliers(database_manager)
+        seed_data.seed_products(database_manager, supplier_ids)
+    except Exception as exc:  # noqa: BLE001
+        # Seeding is best-effort — never block app startup
+        print(f"[seed] Warning: seeder raised {exc!r} — continuing without seed data.")
+
+
 def build_application() -> ApplicationServices:
     """Create the shared dependency graph once for this application process."""
     database_manager = DatabaseManager.get_instance()
     database_manager.connect()
+
+    # Seed roles, permissions, and default admin user on every startup.
+    # The seeder uses INSERT OR IGNORE so it is safe to call repeatedly.
+    _run_seed(database_manager)
 
     product_repository = ProductRepository(database_manager)
     supplier_repository = SupplierRepository(database_manager)

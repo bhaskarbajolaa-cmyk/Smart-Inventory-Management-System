@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#202024">
+    <title>Sign In | SMOभर</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="color-wash"></div>
+
+    <div class="navbar-wrap">
+        <header class="navbar">
+            <a href="{{ url_for('login') }}" class="nav-brand">
+                <img src="{{ url_for('static', filename='img/smobharlogo1.png') }}" alt="SMOभर logo" class="brand-logo">
+                <span class="brand-name">
+                    <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
+                </span>
+            </a>
+            <nav class="nav-links">
+                <a href="{{ url_for('about') }}">About us</a>
+                <a href="#support">Support</a>
+            </nav>
+        </header>
+    </div>
+
+    <main class="hero-wrapper">
+        <section class="auth-card">
+            <div class="form-panel">
+                <div class="form-content">
+                    <h1>WELCOME BACK</h1>
+                    <p class="subtitle">Welcome back! Please enter your details.</p>
+
+                    <form id="loginForm">
+                        <label for="loginUsername">Username</label>
+                        <div class="input-box">
+                            <input type="text" id="loginUsername" placeholder="Enter your username" autocomplete="username" required>
+                        </div>
+
+                        <label for="loginPassword">Password</label>
+                        <div class="input-box">
+                            <span class="field-icon" aria-hidden="true">&#128274;</span>
+                            <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required>
+                            <button type="button" class="password-toggle" id="togglePassword" aria-label="Show password">&#128065;</button>
+                        </div>
+
+                        <div class="form-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="rememberMe"> Remember me
+                            </label>
+                            <a href="#" class="forgot-link" id="forgotPassword">Forgot password?</a>
+                        </div>
+
+                        <p class="message" id="loginMessage" role="status" aria-live="polite"></p>
+
+                        <button type="submit" class="btn-red" id="loginBtn">
+                            <span class="btn-shine"></span>
+                            <span>Sign in</span>
+                            <span class="btn-arrow">&rarr;</span>
+                        </button>
+
+                        <p class="bottom-switch">
+                            Don't have an account? <a href="{{ url_for('signup') }}">Sign up for free!</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <aside class="art-panel">
+                <img src="{{ url_for('static', filename='img/Login1.png') }}" alt="SMOभर visual" class="art-panel-img">
+            </aside>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-top">
+            <h2 class="footer-main-title">Design by Artham</h2>
+            <a href="https://instagram.com/designwithartham" target="_blank" class="footer-social-link">
+                <span class="insta-icon-box">&#9825;</span>
+                <span>@designwithartham</span>
+            </a>
+        </div>
+        <div class="footer-divider"></div>
+        <div class="footer-columns">
+            <div class="footer-col" id="about">
+                <h3>About Us</h3>
+                <ul>
+                    <li><a href="#about">Our Story</a></li>
+                    <li><a href="#about">Testimonials</a></li>
+                    <li><a href="#about">Careers</a></li>
+                    <li><a href="#about">What We Offer</a></li>
+                </ul>
+                <p class="footer-tagline">Crafting unscripted moments that turn strangers into a tribe.</p>
+            </div>
+            <div class="footer-col" id="support">
+                <h3>Support</h3>
+                <ul>
+                    <li><button type="button" class="team-modal-trigger" data-type="email">Email</button></li>
+                    <li><button type="button" class="team-modal-trigger" data-type="linkedin">LinkedIn</button></li>
+                    <li><a href="#support">Contact Us</a></li>
+                    <li><a href="#support">Feedback Form</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Terms &amp; Info</h3>
+                <ul>
+                    <li><a href="#">Disclaimer</a></li>
+                    <li><a href="#">Terms &amp; Conditions</a></li>
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Cancellation</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom-bar">
+            <div class="footer-bottom-left">
+                <span class="footer-brand-mini">SMOभर</span>
+                <span>&copy; 2026 SAFARNAMA. All Rights Reserved.</span>
+            </div>
+            <div class="footer-bottom-right"><span>&#127760; ENG &middot; INR</span></div>
+        </div>
+    </footer>
+
+    <!-- Team Contact Modal -->
+    <div class="modal-overlay" id="teamModal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">Core Team Directory</h3>
+                <button type="button" class="modal-close" id="closeModal" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="member-item">
+                    <div class="member-info"><h4>Artham Tyagi</h4><p>Lead Design &amp; Engineering</p></div>
+                    <div class="member-links">
+                        <a href="mailto:tyagiartham31@gmail.com" class="link-pill link-pill-email" target="_blank">&#9993; Email</a>
+                        <a href="https://www.linkedin.com/in/arthamtyagi/" class="link-pill link-pill-linkedin" target="_blank">in LinkedIn</a>
+                    </div>
+                </div>
+                <div class="member-item">
+                    <div class="member-info"><h4>Krishna Tyagi</h4><p>Core Development</p></div>
+                    <div class="member-links">
+                        <a href="mailto:tyagikrishna1234@gmail.com" class="link-pill link-pill-email" target="_blank">&#9993; Email</a>
+                        <a href="https://www.linkedin.com/in/krishna-tyagi-591a4830a/" class="link-pill link-pill-linkedin" target="_blank">in LinkedIn</a>
+                    </div>
+                </div>
+                <div class="member-item">
+                    <div class="member-info"><h4>Ayush Prajapati</h4><p>Team Member</p></div>
+                    <div class="member-links">
+                        <span class="link-pill link-pill-empty">&#9993; Email</span>
+                        <span class="link-pill link-pill-empty">in LinkedIn</span>
+                    </div>
+                </div>
+                <div class="member-item">
+                    <div class="member-info"><h4>Bhaskar</h4><p>Team Member</p></div>
+                    <div class="member-links">
+                        <span class="link-pill link-pill-empty">&#9993; Email</span>
+                        <span class="link-pill link-pill-empty">in LinkedIn</span>
+                    </div>
+                </div>
+                <div class="member-item">
+                    <div class="member-info"><h4>Mohit Purohit</h4><p>Team Member</p></div>
+                    <div class="member-links">
+                        <span class="link-pill link-pill-empty">&#9993; Email</span>
+                        <span class="link-pill link-pill-empty">in LinkedIn</span>
+                    </div>
+                </div>
+                <div class="member-item">
+                    <div class="member-info"><h4>Anubhav Panwar</h4><p>Team Member</p></div>
+                    <div class="member-links">
+                        <span class="link-pill link-pill-empty">&#9993; Email</span>
+                        <span class="link-pill link-pill-empty">in LinkedIn</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "";  // same origin — Flask serves on the same host
+
+        const loginForm = document.getElementById("loginForm");
+        const loginMessage = document.getElementById("loginMessage");
+        const loginBtn = document.getElementById("loginBtn");
+
+        function showMessage(msg, type) {
+            loginMessage.textContent = msg;
+            loginMessage.className = "message " + type;
+        }
+
+        function triggerColorBurst() {
+            document.body.classList.remove("color-burst");
+            void document.body.offsetWidth;
+            document.body.classList.add("color-burst");
+            setTimeout(() => document.body.classList.remove("color-burst"), 1000);
+        }
+
+        document.getElementById("togglePassword").addEventListener("click", () => {
+            const pwd = document.getElementById("loginPassword");
+            pwd.type = pwd.type === "password" ? "text" : "password";
+        });
+
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            triggerColorBurst();
+
+            const username = document.getElementById("loginUsername").value.trim();
+            const password = document.getElementById("loginPassword").value;
+
+            if (!username || !password) {
+                showMessage("Username and password are required.", "error");
+                return;
+            }
+
+            loginBtn.disabled = true;
+
+            try {
+                const res = await fetch(API_BASE + "/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok) {
+                    sessionStorage.setItem("session_token", data.session_token);
+                    sessionStorage.setItem("user_id", data.user_id);
+                    sessionStorage.setItem("roles", JSON.stringify(data.roles || []));
+                    showMessage("Login successful! Redirecting...", "success");
+                    setTimeout(() => { window.location.href = "{{ url_for('admin') }}"; }, 700);
+                } else {
+                    showMessage(data.description || "Invalid username or password.", "error");
+                }
+            } catch {
+                showMessage("Network error. Please try again.", "error");
+            } finally {
+                loginBtn.disabled = false;
+            }
+        });
+
+        document.getElementById("forgotPassword").addEventListener("click", (e) => {
+            e.preventDefault();
+            showMessage("Password recovery is unavailable in demo mode.", "info");
+        });
+
+        /* Modal Logic */
+        const teamModal = document.getElementById("teamModal");
+        const modalTitle = document.getElementById("modalTitle");
+        const closeModal = document.getElementById("closeModal");
+
+        document.querySelectorAll(".team-modal-trigger").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const type = btn.getAttribute("data-type");
+                modalTitle.textContent = type === "email" ? "Team Email Directory" : "Team LinkedIn Directory";
+                teamModal.classList.add("active");
+                teamModal.setAttribute("aria-hidden", "false");
+            });
+        });
+
+        closeModal.addEventListener("click", () => {
+            teamModal.classList.remove("active");
+            teamModal.setAttribute("aria-hidden", "true");
+        });
+        teamModal.addEventListener("click", (e) => {
+            if (e.target === teamModal) {
+                teamModal.classList.remove("active");
+                teamModal.setAttribute("aria-hidden", "true");
+            }
+        });
+    </script>
+</body>
+</html>

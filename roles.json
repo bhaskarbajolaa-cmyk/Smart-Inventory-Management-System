@@ -28,7 +28,7 @@
   },
   "2": {
     "role_id": 2,
-    "role_name": "Manager",
+    "role_name": "Supervisor",
     "created_by": 1,
     "is_system_default": false,
     "default_job_priority": 3,
@@ -39,7 +39,7 @@
         "permission_id": 1,
         "table_name": null,
         "granted_by": 1,
-        "granted_at": "2026-10-15",
+        "granted_at": "2026-11-06T18:55:43.342036",
         "permission_code": "VIEW"
       },
       {
@@ -48,7 +48,7 @@
         "permission_id": 2,
         "table_name": null,
         "granted_by": 1,
-        "granted_at": "2026-10-15",
+        "granted_at": "2026-11-06T18:55:43.342036",
         "permission_code": "EDIT"
       }
     ]
