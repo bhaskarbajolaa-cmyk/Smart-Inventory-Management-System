@@ -20,6 +20,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
+
 # Allow running as a plain script from the project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
