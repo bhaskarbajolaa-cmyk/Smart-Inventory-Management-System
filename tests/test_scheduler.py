@@ -129,7 +129,7 @@ def test_scheduler_overload_rejection() -> None:
     )
     lock_mgr = LockManager()
 
-    job1 = Job("j1", "t", "r1", 1, 0, "k1", lambda: JobResult(True), lock_mgr)
+    job1 = Job("j1", "t", "r1", 1, 0, "k1", lambda: time.sleep(0.05) or JobResult(True), lock_mgr)
     job2 = Job("j2", "t", "r2", 1, 0, "k2", lambda: JobResult(True), lock_mgr)
     job3 = Job("j3", "t", "r3", 1, 0, "k3", lambda: JobResult(True), lock_mgr)
 
