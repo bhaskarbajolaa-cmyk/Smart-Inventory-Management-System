@@ -176,6 +176,7 @@
                     <div class="form-field form-field-full">
                         <label for="saleProductId">Product ID</label>
                         <input type="number" id="saleProductId" class="field-input-box" readonly>
+                        <small id="saleStockInfo" style="color: #bbb; display: block; margin-top: 4px; font-weight: 500;"></small>
                     </div>
                     <div class="form-field form-field-full">
                         <label for="saleQty">Quantity</label>
@@ -377,13 +378,17 @@
 
         // Sales run through the async job queue, so re-poll until the worker's
         // write lands instead of guessing a fixed delay.
-        async function refreshUntilSold(productId, quantityBefore, timeoutMs = 10000) {
+        async function refreshUntilSold(productId, quantityBefore, timeoutMs = 7000) {
             const deadline = Date.now() + timeoutMs;
             while (Date.now() < deadline) {
                 await new Promise((resolve) => setTimeout(resolve, 700));
                 await loadProducts(null, { silent: true });
                 const now = loadedProducts.find((p) => p.product_id === productId)?.quantity;
                 if (now !== undefined && quantityBefore !== undefined && now !== quantityBefore) return;
+            }
+            const finalQty = loadedProducts.find((p) => p.product_id === productId)?.quantity;
+            if (finalQty !== undefined && quantityBefore !== undefined && finalQty === quantityBefore) {
+                showToast("Note: Stock quantity unchanged. Transaction was not completed.");
             }
         }
 
@@ -532,10 +537,18 @@
         saleModal.addEventListener("click", (e) => { if (e.target === saleModal) closeSaleModal(); });
 
         function openSaleModal(productId) {
+            const prod = loadedProducts.find((p) => p.product_id === productId);
             document.getElementById("saleProductId").value = productId;
             document.getElementById("saleQty").value = "";
             document.getElementById("saleCustomerRef").value = "";
             document.getElementById("saleMessage").textContent = "";
+            const stockInfo = document.getElementById("saleStockInfo");
+            if (stockInfo) {
+                stockInfo.textContent = prod ? `Product: ${prod.name} | Available Stock: ${prod.quantity}` : "";
+            }
+            if (prod) {
+                document.getElementById("saleQty").max = prod.quantity;
+            }
             saleModal.classList.add("active"); saleModal.setAttribute("aria-hidden","false");
         }
 
@@ -554,8 +567,17 @@
             if (!Number.isInteger(productId) || productId < 1) { msgEl.textContent = "Invalid product ID."; msgEl.className = "message error"; return; }
             if (!Number.isInteger(quantity) || quantity < 1) { msgEl.textContent = "Quantity must be a positive integer."; msgEl.className = "message error"; return; }
 
+            const prod = loadedProducts.find((p) => p.product_id === productId);
+            if (prod && quantity > prod.quantity) {
+                const errMsg = `Insufficient stock. Only ${prod.quantity} items available.`;
+                msgEl.textContent = errMsg;
+                msgEl.className = "message error";
+                showToast(errMsg);
+                return;
+            }
+
             btn.disabled = true;
-            const stockBefore = loadedProducts.find((p) => p.product_id === productId)?.quantity;
+            const stockBefore = prod?.quantity;
             try {
                 const res = await fetch("/api/sales", {
                     method: "POST",
@@ -575,13 +597,19 @@
                     refreshUntilSold(productId, stockBefore);
                 } else if (res.status === 403) {
                     msgEl.textContent = "You do not have APPEND permission."; msgEl.className = "message error";
+                    showToast("You do not have permission to record sales.");
                 } else if (res.status === 404) {
                     msgEl.textContent = "Product not found."; msgEl.className = "message error";
+                    showToast("Product not found.");
                 } else {
-                    msgEl.textContent = data.description || "An unexpected error occurred."; msgEl.className = "message error";
+                    const errMsg = data.description || "An unexpected error occurred.";
+                    msgEl.textContent = errMsg;
+                    msgEl.className = "message error";
+                    showToast(errMsg);
                 }
             } catch {
                 msgEl.textContent = "Network error."; msgEl.className = "message error";
+                showToast("Network error. Please try again.");
             } finally {
                 btn.disabled = false;
             }
