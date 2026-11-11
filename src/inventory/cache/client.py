@@ -17,7 +17,10 @@ class CacheClient:
         if redis_url:
             from redis import Redis
 
-            self._redis: Any = Redis.from_url(redis_url, decode_responses=True)
+            kwargs: dict[str, Any] = {"decode_responses": True}
+            if redis_url.startswith("rediss://"):
+                kwargs["ssl_cert_reqs"] = None
+            self._redis: Any = Redis.from_url(redis_url, **kwargs)
         else:
             import fakeredis
 
