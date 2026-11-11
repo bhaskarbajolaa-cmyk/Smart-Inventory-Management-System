@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cache Performance Demo | SMOभर</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/cache_demo.css', v='6') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cache_demo.css', v='7') }}">
 </head>
 <body>
     <header class="topbar">
@@ -12,6 +12,11 @@
         <nav aria-label="Main navigation">
             <a href="/home">Products</a>
             <a href="/cache-demo" aria-current="page">Cache demo</a>
+            <a class="page-switch" href="/cache-traffic" title="Open live request monitor" aria-label="Open live request monitor">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 13h4l3-8 4 14 2-6h3"></path>
+                </svg>
+            </a>
         </nav>
     </header>
 
@@ -45,43 +50,6 @@
         </section>
 
         <section class="results" id="results" hidden aria-live="polite">
-            <section class="chart-card traffic-card" aria-labelledby="traffic-title">
-                <div class="chart-heading">
-                    <div>
-                        <h2 id="traffic-title">Benchmark request volume</h2>
-                        <p>Successful benchmark reads counted since this page opened. The graph shows the most recent 20 runs; totals include all runs in this page session.</p>
-                    </div>
-                    <button id="resetTrafficButton" class="secondary-button" type="button">Reset counts</button>
-                </div>
-                <div class="traffic-summary">
-                    <article>
-                        <span>Benchmark runs</span>
-                        <strong id="trafficRuns">0</strong>
-                    </article>
-                    <article>
-                        <span>Database read requests</span>
-                        <strong id="trafficDatabase">0</strong>
-                    </article>
-                    <article>
-                        <span>Cache read requests</span>
-                        <strong id="trafficCache">0</strong>
-                    </article>
-                </div>
-                <div class="chart-legend traffic-legend" aria-hidden="true">
-                    <span><i class="legend-swatch cache-swatch"></i>Total read requests handled</span>
-                </div>
-                <svg id="trafficChart" class="response-chart traffic-chart" viewBox="0 0 820 300" role="img"
-                     aria-labelledby="trafficChartTitle trafficChartDescription">
-                    <title id="trafficChartTitle">Cumulative benchmark request count</title>
-                    <desc id="trafficChartDescription">Successful database and cache read requests across benchmark runs in this browser tab.</desc>
-                    <g id="trafficChartGrid"></g>
-                    <polyline id="trafficTotalLine" class="chart-line cache-line" points=""></polyline>
-                    <g id="trafficChartPoints"></g>
-                    <text x="426" y="292" class="axis-title" text-anchor="middle">Completed benchmark runs</text>
-                    <text x="18" y="140" class="axis-title" text-anchor="middle"
-                          transform="rotate(-90 18 140)">Cumulative read requests</text>
-                </svg>
-            </section>
             <div class="summary-grid">
                 <article class="metric card">
                     <span class="metric-label">Database only</span>
@@ -143,6 +111,6 @@
             writes from another app process may take that long to appear in this process's cache.
         </footer>
     </main>
-    <script src="{{ url_for('static', filename='js/cache_demo.js', v='6') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/cache_demo.js', v='7') }}" defer></script>
 </body>
 </html>

@@ -54,6 +54,7 @@ class PostgreSQLAdapter(DatabaseAdapter):
                 "Run: pip install \"psycopg[binary]>=3.1\""
             )
         self._connection: Any | None = None  # psycopg.Connection[dict]
+        self._config: Any | None = None
         self._in_transaction: bool = False
         self.last_inserted_id: int | None = None
         self.last_rowcount: int | None = None
@@ -67,8 +68,22 @@ class PostgreSQLAdapter(DatabaseAdapter):
         return self._in_transaction
 
     # ------------------------------------------------------------------
-    # Lifecycle
+    # Lifecycle & Reconnection
     # ------------------------------------------------------------------
+
+    def _is_connection_closed(self) -> bool:
+        if self._connection is None:
+            return True
+        closed = getattr(self._connection, "closed", False)
+        broken = getattr(self._connection, "broken", False)
+        return closed is True or broken is True
+
+    def _ensure_connected(self) -> None:
+        if self._is_connection_closed():
+            if self._config is not None:
+                self.connect(self._config)
+            else:
+                raise ConnectionError("PostgreSQL connection is not established.")
 
     def connect(self, config: Any) -> None:
         """Open a psycopg3 connection using host/port/db_name from config."""
@@ -77,12 +92,17 @@ class PostgreSQLAdapter(DatabaseAdapter):
                 "psycopg is not installed. "
                 "Run: pip install \"psycopg[binary]>=3.1\""
             )
+        self._config = config
         connection_string = getattr(config, "connection_string", "")
         if connection_string:
             connection_options: dict[str, Any] = {
                 "row_factory": _psycopg_dict_row,
                 "autocommit": True,
                 "connect_timeout": int(getattr(config, "timeout", 30)),
+                "keepalives": 1,
+                "keepalives_idle": 30,
+                "keepalives_interval": 10,
+                "keepalives_count": 5,
             }
             if "sslmode=" not in connection_string:
                 connection_options["sslmode"] = getattr(config, "sslmode", "require")
@@ -97,6 +117,10 @@ class PostgreSQLAdapter(DatabaseAdapter):
             f"port={config.port}",
             f"dbname={config.db_name}",
             f"connect_timeout={int(getattr(config, 'timeout', 30))}",
+            "keepalives=1",
+            "keepalives_idle=30",
+            "keepalives_interval=10",
+            "keepalives_count=5",
         ]
         if getattr(config, "user", ""):
             parts.append(f"user={config.user}")
@@ -118,6 +142,8 @@ class PostgreSQLAdapter(DatabaseAdapter):
                 if self._in_transaction:
                     self.rollback()
                 self._connection.close()
+            except Exception:
+                pass
             finally:
                 self._connection = None
                 self._in_transaction = False
@@ -130,31 +156,55 @@ class PostgreSQLAdapter(DatabaseAdapter):
         self, sql: str, params: Sequence[Any] | None = None
     ) -> list[dict[str, Any]]:
         """Execute a parameterised query with ``?`` → ``%s`` conversion."""
-        if self._connection is None:
-            raise ConnectionError("PostgreSQL connection is not established.")
+        self._ensure_connected()
         pg_sql = _to_pg_sql(sql)
         self.last_inserted_id = None
-        with self._connection.cursor() as cursor:
-            cursor.execute(pg_sql, tuple(params) if params else None)
-            self.last_rowcount = cursor.rowcount
-            # lastrowid is not available in psycopg3 directly; use RETURNING
-            if cursor.description is not None:
-                rows: list[dict[str, Any]] = cursor.fetchall()
-            else:
-                rows = []
-            if rows and "RETURNING" in pg_sql.upper():
-                self.last_inserted_id = int(next(iter(rows[0].values())))
-            return rows
+
+        def _run_cursor() -> list[dict[str, Any]]:
+            with self._connection.cursor() as cursor:  # type: ignore[union-attr]
+                cursor.execute(pg_sql, tuple(params) if params else None)
+                self.last_rowcount = cursor.rowcount
+                # lastrowid is not available in psycopg3 directly; use RETURNING
+                if cursor.description is not None:
+                    rows: list[dict[str, Any]] = cursor.fetchall()
+                else:
+                    rows = []
+                if rows and "RETURNING" in pg_sql.upper():
+                    self.last_inserted_id = int(next(iter(rows[0].values())))
+                return rows
+
+        try:
+            return _run_cursor()
+        except Exception as exc:
+            is_conn_error = False
+            if _PSYCOPG_AVAILABLE and isinstance(
+                exc, (psycopg.OperationalError, psycopg.InterfaceError)
+            ):
+                is_conn_error = True
+            elif isinstance(
+                exc, (ConnectionError, BrokenPipeError, ConnectionResetError)
+            ):
+                is_conn_error = True
+
+            if is_conn_error and not self._in_transaction and self._config is not None:
+                try:
+                    if self._connection is not None:
+                        self._connection.close()
+                except Exception:
+                    pass
+                self._connection = None
+                self._ensure_connected()
+                return _run_cursor()
+            raise
 
     def execute_schema(self, schema_sql: str) -> None:
         """Execute all statements in the PostgreSQL-specific schema."""
-        if self._connection is None:
-            raise ConnectionError("PostgreSQL connection is not established.")
+        self._ensure_connected()
         for stmt in schema_sql.split(";"):
             stmt = stmt.strip()
             if not stmt:
                 continue
-            with self._connection.cursor() as cursor:
+            with self._connection.cursor() as cursor:  # type: ignore[union-attr]
                 cursor.execute(stmt)
 
     # ------------------------------------------------------------------
@@ -162,27 +212,54 @@ class PostgreSQLAdapter(DatabaseAdapter):
     # ------------------------------------------------------------------
 
     def begin_transaction(self) -> None:
-        if self._connection is None:
-            raise ConnectionError("PostgreSQL connection is not established.")
+        self._ensure_connected()
         if not self._in_transaction:
-            with self._connection.cursor() as cursor:
-                cursor.execute("BEGIN")
+            try:
+                with self._connection.cursor() as cursor:  # type: ignore[union-attr]
+                    cursor.execute("BEGIN")
+            except Exception as exc:
+                is_conn_error = False
+                if _PSYCOPG_AVAILABLE and isinstance(
+                    exc, (psycopg.OperationalError, psycopg.InterfaceError)
+                ):
+                    is_conn_error = True
+                elif isinstance(
+                    exc, (ConnectionError, BrokenPipeError, ConnectionResetError)
+                ):
+                    is_conn_error = True
+
+                if is_conn_error and self._config is not None:
+                    try:
+                        if self._connection is not None:
+                            self._connection.close()
+                    except Exception:
+                        pass
+                    self._connection = None
+                    self._ensure_connected()
+                    with self._connection.cursor() as cursor:  # type: ignore[union-attr]
+                        cursor.execute("BEGIN")
+                else:
+                    raise
             self._in_transaction = True
 
     def commit(self) -> None:
         if self._connection is None:
             raise ConnectionError("PostgreSQL connection is not established.")
         if self._in_transaction:
-            with self._connection.cursor() as cursor:
-                cursor.execute("COMMIT")
-            self._in_transaction = False
+            try:
+                with self._connection.cursor() as cursor:  # type: ignore[union-attr]
+                    cursor.execute("COMMIT")
+            finally:
+                self._in_transaction = False
 
     def rollback(self) -> None:
         if self._connection is None:
             raise ConnectionError("PostgreSQL connection is not established.")
         if self._in_transaction:
             try:
-                with self._connection.cursor() as cursor:
+                with self._connection.cursor() as cursor:  # type: ignore[union-attr]
                     cursor.execute("ROLLBACK")
+            except Exception:
+                pass
             finally:
                 self._in_transaction = False

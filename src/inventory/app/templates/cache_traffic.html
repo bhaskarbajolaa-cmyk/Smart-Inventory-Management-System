@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Request Monitor | SMOभर</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cache_demo.css', v='7') }}">
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="/home">SMOभर <span>Inventory</span></a>
+        <nav aria-label="Cache tools">
+            <a class="page-switch" href="/cache-demo" title="Open cache performance demo" aria-label="Open cache performance demo">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 13h4l3-8 4 14 2-6h3"></path>
+                </svg>
+            </a>
+        </nav>
+    </header>
+
+    <main class="page">
+        <section class="intro">
+            <p class="eyebrow">LIVE REQUEST MONITOR</p>
+            <h1>Requests reaching the application</h1>
+            <p class="intro-copy">
+                This page refreshes automatically and shows dynamic application requests as they arrive.
+                Keep it open while you use the app or run the cache comparison.
+            </p>
+        </section>
+
+        <section class="traffic-live-summary" aria-label="Request totals">
+            <article class="card live-metric">
+                <span class="metric-label">Since opening this monitor</span>
+                <strong id="monitorRequests">0</strong>
+                <span class="metric-caption">new requests handled</span>
+            </article>
+            <article class="card live-metric">
+                <span class="metric-label">Since this server process started</span>
+                <strong id="totalRequests">0</strong>
+                <span class="metric-caption">dynamic requests handled</span>
+            </article>
+            <article class="card live-metric">
+                <span class="metric-label">Last 60 seconds</span>
+                <strong id="recentRequests">0</strong>
+                <span class="metric-caption">requests in the rolling window</span>
+            </article>
+        </section>
+
+        <section class="chart-card card live-traffic-card" aria-labelledby="traffic-title">
+            <div class="chart-heading">
+                <div>
+                    <h2 id="traffic-title">Incoming requests, live</h2>
+                    <p>Requests per 5-second interval, updated every 2 seconds.</p>
+                </div>
+                <span id="connectionStatus" class="live-status" role="status" aria-live="polite">
+                    <i class="live-dot"></i><span id="connectionStatusText">Connecting…</span>
+                </span>
+            </div>
+            <svg id="liveTrafficChart" class="response-chart live-traffic-chart" viewBox="0 0 820 310" role="img"
+                 aria-labelledby="liveTrafficTitle liveTrafficDescription">
+                <title id="liveTrafficTitle">Incoming application requests during the past minute</title>
+                <desc id="liveTrafficDescription">A live-updating graph of dynamic requests received in five-second intervals.</desc>
+                <g id="liveTrafficGrid"></g>
+                <polyline id="liveTrafficLine" class="chart-line cache-line" points=""></polyline>
+                <g id="liveTrafficPoints"></g>
+                <text x="426" y="302" class="axis-title" text-anchor="middle">Time</text>
+                <text x="18" y="150" class="axis-title" text-anchor="middle"
+                      transform="rotate(-90 18 150)">Requests per 5 seconds</text>
+            </svg>
+            <p class="measurement-note">
+                Health checks, static files and this monitor's polling requests are excluded.
+                Counts are held in this server process; multiple workers or instances are not combined.
+            </p>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/cache_traffic.js', v='1') }}" defer></script>
+</body>
+</html>

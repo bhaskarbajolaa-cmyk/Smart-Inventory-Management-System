@@ -258,15 +258,31 @@ class InventoryCacheTests(unittest.TestCase):
     def test_cache_demo_page_is_registered(self) -> None:
         client = create_app(SimpleNamespace()).test_client()
         response = client.get("/cache-demo")
+        traffic_page = client.get("/cache-traffic")
         home = client.get("/home")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Does the cache make product reads faster?", response.data)
-        self.assertIn(b"trafficChart", response.data)
-        self.assertIn(b"trafficTotalLine", response.data)
-        self.assertIn(b"cache_demo.js?v=6", response.data)
-        self.assertIn(b"trafficDatabase", response.data)
-        self.assertIn(b"trafficCache", response.data)
+        self.assertIn(b"cache-traffic", response.data)
+        self.assertNotIn(b"trafficChart", response.data)
+        self.assertIn(b"cache_demo.js?v=7", response.data)
+        self.assertEqual(traffic_page.status_code, 200)
+        self.assertIn(b"Requests reaching the application", traffic_page.data)
+        self.assertIn(b"cache_traffic.js?v=1", traffic_page.data)
         self.assertNotIn(b"Cache Demo", home.data)
+
+    def test_live_request_metrics_exclude_polling_and_health_checks(self) -> None:
+        client = create_app(SimpleNamespace()).test_client()
+        client.get("/cache-demo")
+        client.get("/health")
+        first = client.get("/api/cache/traffic")
+        second = client.get("/api/cache/traffic")
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json["total_requests"], 1)
+        self.assertEqual(first.json["recent_requests"], 1)
+        self.assertEqual(len(first.json["buckets"]), 12)
+        self.assertEqual(sum(first.json["buckets"]), 1)
+        self.assertEqual(second.json["total_requests"], 1)
 
     def test_flush_worker_drains_dirty_set(self) -> None:
         self.product.name = "Buffered Product"

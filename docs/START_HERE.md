@@ -61,12 +61,13 @@ and trigger a deploy/restart. Render's build only installs dependencies; schema
 initialization and idempotent demo seeding happen when the app starts, so the
 build does not need to connect to Aiven.
 
-The cache demo remains an unlinked, standalone route at `/cache-demo` and does
-not change the home-page navigation or login flow. It is not authenticated:
-anyone who discovers the URL can use it, so treat it as a demo rather than a
-private admin tool. Its request graph counts benchmark reads in that browser
-page session only, not all visitors or total Render traffic. Never commit or
-paste connection URLs containing passwords into source control.
+The cache demo remains separate from the home-page navigation and login flow.
+Visit `/cache-demo` for the performance comparison and `/cache-traffic` for a
+live request monitor that refreshes every two seconds. Both routes are public
+and unauthenticated, so treat them as demos rather than private admin tools.
+Traffic metrics count dynamic requests within the current server process and
+are not aggregated across multiple workers or instances. Never commit or paste
+connection URLs containing passwords into source control.
 
 The starter test checks that the package imports. Create a focused test file for the class or behavior you implement, then run just that file while working. For example, after creating `tests/test_catalog.py`:
 

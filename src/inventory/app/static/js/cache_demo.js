@@ -5,20 +5,6 @@
     const runButton = document.getElementById("runButton");
     const message = document.getElementById("message");
     const results = document.getElementById("results");
-    const traffic = {
-        runs: 0,
-        databaseReads: 0,
-        cacheReads: 0,
-        points: [],
-    };
-
-    document.getElementById("resetTrafficButton").addEventListener("click", () => {
-        traffic.runs = 0;
-        traffic.databaseReads = 0;
-        traffic.cacheReads = 0;
-        traffic.points = [];
-        drawTrafficChart();
-    });
 
     function showMessage(text, isError = false) {
         message.textContent = text;
@@ -169,114 +155,6 @@
                 : `At ${maxRequests} requests, cache fill plus reads took ${milliseconds(Math.abs(timeSaved))} longer. More repeated reads may be needed to break even.`;
     }
 
-    function recordTraffic(data) {
-        traffic.runs += 1;
-        traffic.databaseReads += data.database.reads;
-        traffic.cacheReads += data.cache.reads;
-        traffic.points.push({
-            run: traffic.runs,
-            databaseReads: traffic.databaseReads,
-            cacheReads: traffic.cacheReads,
-        });
-        if (traffic.points.length > 20) {
-            traffic.points.shift();
-        }
-        drawTrafficChart();
-    }
-
-    function drawTrafficChart() {
-        document.getElementById("trafficRuns").textContent = traffic.runs;
-        document.getElementById("trafficDatabase").textContent = traffic.databaseReads;
-        document.getElementById("trafficCache").textContent = traffic.cacheReads;
-
-        const left = 64;
-        const top = 24;
-        const width = 720;
-        const height = 196;
-        const firstRun = traffic.points[0]?.run ?? 0;
-        const lastRun = traffic.points.at(-1)?.run ?? 1;
-        const maxReads = Math.max(
-            (traffic.points.at(-1)?.databaseReads ?? 0)
-                + (traffic.points.at(-1)?.cacheReads ?? 0),
-            1,
-        );
-        const yStep = Math.max(1, Math.ceil(maxReads / 4));
-        const yMaximum = yStep * 4;
-        const x = (run) =>
-            traffic.points.length < 2
-                ? left + width / 2
-                : left + ((run - firstRun) / Math.max(1, lastRun - firstRun)) * width;
-        const y = (count) => top + height - (count / yMaximum) * height;
-        const grid = document.getElementById("trafficChartGrid");
-        const markers = document.getElementById("trafficChartPoints");
-        const totalCoordinates = [];
-        grid.replaceChildren();
-        markers.replaceChildren();
-
-        for (let tick = 0; tick <= 4; tick += 1) {
-            const value = yStep * tick;
-            const yPosition = y(value);
-            grid.append(
-                svgElement("line", {
-                    x1: left,
-                    x2: left + width,
-                    y1: yPosition,
-                    y2: yPosition,
-                    class: "chart-grid-line",
-                }),
-            );
-            const label = svgElement("text", {
-                x: left - 10,
-                y: yPosition + 4,
-                class: "chart-tick",
-                "text-anchor": "end",
-            });
-            label.textContent = value.toLocaleString();
-            grid.append(label);
-        }
-
-        const runTicks = traffic.points.length < 2
-            ? [lastRun]
-            : [...new Set([firstRun, Math.round((firstRun + lastRun) / 2), lastRun])];
-        for (const [index, run] of runTicks.entries()) {
-            const label = svgElement("text", {
-                x: x(run),
-                y: top + height + 22,
-                class: "chart-tick",
-                "text-anchor": index === 0 ? "start" : index === runTicks.length - 1 ? "end" : "middle",
-            });
-            label.textContent = run;
-            grid.append(label);
-        }
-
-        for (const point of traffic.points) {
-            const xPosition = x(point.run);
-            const total = point.databaseReads + point.cacheReads;
-            const yPosition = y(total);
-            totalCoordinates.push(`${xPosition},${yPosition}`);
-            const marker = svgElement("circle", {
-                cx: xPosition,
-                cy: yPosition,
-                r: 3,
-                class: "cache-point",
-            });
-            const tooltip = svgElement("title");
-            tooltip.textContent =
-                `Run ${point.run}: ${total.toLocaleString()} total read requests (${point.databaseReads} database, ${point.cacheReads} cache)`;
-            marker.append(tooltip);
-            markers.append(marker);
-        }
-
-        document.getElementById("trafficTotalLine").setAttribute(
-            "points",
-            totalCoordinates.join(" "),
-        );
-        document.getElementById("trafficChart").setAttribute(
-            "aria-label",
-            `${traffic.runs} completed benchmark runs since this page opened: ${traffic.databaseReads + traffic.cacheReads} total read requests, ${traffic.databaseReads} on the database path and ${traffic.cacheReads} on the cache path.`,
-        );
-    }
-
     function renderBenchmark(data) {
         const dbAverage = data.database.average_ms;
         const cacheAverage = data.cache.average_ms;
@@ -306,7 +184,6 @@
         document.getElementById("readCounts").textContent = `${data.iterations}`;
         document.getElementById("measurementNote").textContent =
             `Measurements alternate paths to reduce ordering bias. Cache line includes the initial ${milliseconds(data.cache.first_read_ms)} cache fill; later reads include hits and any Redis revalidation.`;
-        recordTraffic(data);
         drawResponseChart(data);
         results.hidden = false;
     }

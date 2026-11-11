@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import threading
+from collections import deque
 from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -19,6 +21,53 @@ from inventory.catalog.filters import ProductFilter
 
 
 EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
+
+
+class RequestMetrics:
+    """Track dynamic application requests for the current server process."""
+
+    WINDOW_SECONDS = 60
+    BUCKET_SECONDS = 5
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._total = 0
+        self._requests: deque[float] = deque()
+
+    def record(self) -> None:
+        now = time.monotonic()
+        cutoff = now - self.WINDOW_SECONDS
+        with self._lock:
+            self._total += 1
+            self._requests.append(now)
+            while self._requests and self._requests[0] < cutoff:
+                self._requests.popleft()
+
+    def snapshot(self) -> dict[str, Any]:
+        now = time.monotonic()
+        cutoff = now - self.WINDOW_SECONDS
+        bucket_count = self.WINDOW_SECONDS // self.BUCKET_SECONDS
+        buckets = [0] * bucket_count
+        with self._lock:
+            while self._requests and self._requests[0] < cutoff:
+                self._requests.popleft()
+            total = self._total
+            recent = tuple(self._requests)
+
+        for timestamp in recent:
+            bucket = min(
+                bucket_count - 1,
+                int((timestamp - cutoff) // self.BUCKET_SECONDS),
+            )
+            buckets[max(0, bucket)] += 1
+
+        return {
+            "total_requests": total,
+            "recent_requests": len(recent),
+            "window_seconds": self.WINDOW_SECONDS,
+            "bucket_seconds": self.BUCKET_SECONDS,
+            "buckets": buckets,
+        }
 
 
 def create_app(services: ApplicationServices | None = None) -> Any:
@@ -38,6 +87,17 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         static_folder=os.path.join(_here, "static"),
         static_url_path="/static",
     )
+    request_metrics = RequestMetrics()
+    app.extensions["request_metrics"] = request_metrics
+
+    @app.before_request
+    def count_application_request() -> None:
+        if (
+            request.path != "/health"
+            and request.path != "/api/cache/traffic"
+            and not request.path.startswith("/static/")
+        ):
+            request_metrics.record()
 
     # Register frontend page routes
     from inventory.app.web import register_page_routes
@@ -288,6 +348,10 @@ def create_app(services: ApplicationServices | None = None) -> Any:
                 "cache": services.inventory_cache.stats(),
             }
         )
+
+    @app.get("/api/cache/traffic")
+    def cache_traffic() -> Any:
+        return jsonify(request_metrics.snapshot())
 
     @app.post("/api/auth/register")
     def register() -> Any:
