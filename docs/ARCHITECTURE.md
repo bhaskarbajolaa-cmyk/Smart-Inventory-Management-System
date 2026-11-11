@@ -45,7 +45,9 @@ it does not alter the configured application database or require Upstash.
 The public `/cache-demo` page compares cumulative database-only and cache-path
 read times and estimates break-even for repeated reads. It also tracks successful
 benchmark read counts for the current browser page session; those counts are
-diagnostic and are not global production traffic metrics.
+diagnostic and are not global production traffic metrics. The route is not
+linked from the main application navigation, but it is public and unprotected;
+URL secrecy is not authentication.
 
 The custom-table models and repository are isolated in `custom_tables/` and are stretch-only. The eventual request/transaction flow should acquire the product lock, execute the stock change through the transaction/repository path, commit or roll back, and release the lock in a `finally` block.
 
