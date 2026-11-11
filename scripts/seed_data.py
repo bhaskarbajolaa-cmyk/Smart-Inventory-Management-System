@@ -9,8 +9,8 @@ Or via the installed entry-point after `pip install -e .[dev]`:
     python -m inventory.app.main --mode cli   # starts app (builds DB first)
     python scripts/seed_data.py               # then seeds
 
-The seeder is safe to re-run — it uses INSERT OR IGNORE / UPDATE OR IGNORE
-patterns so existing data is not duplicated.
+The seeder is safe to re-run — it uses portable ON CONFLICT DO NOTHING
+statements so existing data is not duplicated.
 """
 
 from __future__ import annotations
@@ -38,6 +38,21 @@ def _now() -> str:
     return datetime.now().isoformat()
 
 
+def _ensure_global_grant(db: DatabaseManager, role_id: int, permission_id: int) -> None:
+    existing = db.execute_query(
+        """SELECT grant_id FROM table_access_grants
+           WHERE role_id = ? AND permission_id = ? AND table_name IS NULL""",
+        (role_id, permission_id),
+    )
+    if not existing:
+        db.execute_query(
+            """INSERT INTO table_access_grants
+               (role_id, permission_id, table_name, granted_by, granted_at)
+               VALUES (?, ?, NULL, 0, ?)""",
+            (role_id, permission_id, _now()),
+        )
+
+
 # ---------------------------------------------------------------------------
 # Seed functions
 # ---------------------------------------------------------------------------
@@ -55,7 +70,7 @@ def seed_permissions(db: DatabaseManager) -> dict[str, int]:
     result: dict[str, int] = {}
     for code, description in permissions:
         db.execute_query(
-            "INSERT OR IGNORE INTO permissions (code, description) VALUES (?, ?)",
+            "INSERT INTO permissions (code, description) VALUES (?, ?) ON CONFLICT DO NOTHING",
             (code, description),
         )
         rows = db.execute_query(
@@ -70,21 +85,16 @@ def seed_permissions(db: DatabaseManager) -> dict[str, int]:
 def seed_admin_role(db: DatabaseManager, perm_ids: dict[str, int]) -> int:
     """Insert the Admin system role and its grants. Returns role_id."""
     db.execute_query(
-        """INSERT OR IGNORE INTO roles
+        """INSERT INTO roles
            (role_id, role_name, created_by, is_system_default, default_job_priority)
-           VALUES (1, 'Admin', 0, 1, 1)""",
+           VALUES (1, 'Admin', 0, 1, 1) ON CONFLICT DO NOTHING""",
     )
     rows = db.execute_query("SELECT role_id FROM roles WHERE role_id = 1")
     role_id = int(rows[0]["role_id"])
 
     # Grant every permission globally (table_name = NULL)
     for code, pid in perm_ids.items():
-        db.execute_query(
-            """INSERT OR IGNORE INTO table_access_grants
-               (role_id, permission_id, table_name, granted_by, granted_at)
-               VALUES (?, ?, NULL, 0, ?)""",
-            (role_id, pid, _now()),
-        )
+        _ensure_global_grant(db, role_id, pid)
 
     print(f"  ✓ Admin role (id=1) seeded with {len(perm_ids)} global grants")
     return role_id
@@ -93,22 +103,16 @@ def seed_admin_role(db: DatabaseManager, perm_ids: dict[str, int]) -> int:
 def seed_manager_role(db: DatabaseManager, perm_ids: dict[str, int]) -> int:
     """Insert the Manager role with VIEW + APPEND + EDIT. Returns role_id."""
     db.execute_query(
-        """INSERT OR IGNORE INTO roles
+        """INSERT INTO roles
            (role_id, role_name, created_by, is_system_default, default_job_priority)
-           VALUES (2, 'Manager', 0, 1, 2)""",
+           VALUES (2, 'Manager', 0, 1, 2) ON CONFLICT DO NOTHING""",
     )
     rows = db.execute_query("SELECT role_id FROM roles WHERE role_id = 2")
     role_id = int(rows[0]["role_id"])
 
     manager_perms = ["VIEW", "APPEND", "EDIT"]
     for code in manager_perms:
-        pid = perm_ids[code]
-        db.execute_query(
-            """INSERT OR IGNORE INTO table_access_grants
-               (role_id, permission_id, table_name, granted_by, granted_at)
-               VALUES (?, ?, NULL, 0, ?)""",
-            (role_id, pid, _now()),
-        )
+        _ensure_global_grant(db, role_id, perm_ids[code])
 
     print(f"  ✓ Manager role (id=2) seeded with {manager_perms}")
     return role_id
@@ -117,19 +121,21 @@ def seed_manager_role(db: DatabaseManager, perm_ids: dict[str, int]) -> int:
 def seed_supervisor_role(db: DatabaseManager, perm_ids: dict[str, int]) -> int:
     """Insert the Supervisor role with VIEW only. Returns role_id."""
     db.execute_query(
-        """INSERT OR IGNORE INTO roles
+        """INSERT INTO roles
            (role_id, role_name, created_by, is_system_default, default_job_priority)
-           VALUES (3, 'Supervisor', 0, 1, 3)""",
+           VALUES (3, 'Supervisor', 0, 1, 3) ON CONFLICT DO NOTHING""",
     )
+    if db.config.backend == "postgresql":
+        db.execute_query(
+            """SELECT setval(
+                   pg_get_serial_sequence('roles', 'role_id'),
+                   (SELECT COALESCE(MAX(role_id), 1) FROM roles)
+               )"""
+        )
     rows = db.execute_query("SELECT role_id FROM roles WHERE role_id = 3")
     role_id = int(rows[0]["role_id"])
 
-    db.execute_query(
-        """INSERT OR IGNORE INTO table_access_grants
-           (role_id, permission_id, table_name, granted_by, granted_at)
-           VALUES (?, ?, NULL, 0, ?)""",
-        (role_id, perm_ids["VIEW"], _now()),
-    )
+    _ensure_global_grant(db, role_id, perm_ids["VIEW"])
 
     print("  ✓ Supervisor role (id=3) seeded with VIEW only")
     return role_id

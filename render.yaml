@@ -4,7 +4,22 @@ services:
     env: python
     region: oregon
     plan: free
-    buildCommand: pip install -r requirements.txt && python scripts/seed_data.py
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn wsgi:app
     healthCheckPath: /health
     autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSLMODE
+        value: require
+      - key: REDIS_URL
+        sync: false
+      - key: CACHE_POLICY
+        value: lru
+      - key: CACHE_CAPACITY
+        value: "64"
+      - key: CACHE_FLUSH_INTERVAL
+        value: "30"
+      - key: CACHE_MAX_DIRTY
+        value: "100"

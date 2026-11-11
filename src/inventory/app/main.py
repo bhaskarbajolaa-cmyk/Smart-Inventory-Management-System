@@ -1,4 +1,5 @@
 import argparse
+import atexit
 import os
 import sys
 from collections.abc import Sequence
@@ -9,6 +10,10 @@ from inventory.concurrency.locks import LockManager
 from inventory.concurrency.queue import PriorityJobQueue
 from inventory.concurrency.retry import RetryPolicy
 from inventory.concurrency.scheduler import RequestScheduler
+from inventory.cache.client import CacheClient
+from inventory.cache.flush_worker import FlushWorker
+from inventory.cache.inventory_cache import InventoryCache
+from inventory.cache.repository import CachedProductRepository
 from inventory.persistence.database import DatabaseManager
 from inventory.persistence.repositories.products import ProductRepository
 from inventory.persistence.repositories.roles import RoleRepository
@@ -58,16 +63,34 @@ def build_application() -> ApplicationServices:
     database_manager.connect()
 
     # Seed roles, permissions, and default admin user on every startup.
-    # The seeder uses INSERT OR IGNORE so it is safe to call repeatedly.
+    # Seeding is idempotent and safe to call repeatedly.
     _run_seed(database_manager)
 
     product_repository = ProductRepository(database_manager)
+    lock_manager = LockManager()
+    cache_client = CacheClient()
+    cache_capacity = int(os.environ.get("CACHE_CAPACITY", "64"))
+    inventory_cache = InventoryCache(cache_client, capacity=cache_capacity)
+    cached_product_repository = CachedProductRepository(
+        product_repository,
+        inventory_cache,
+        lock_manager,
+    )
+    flush_interval = float(os.environ.get("CACHE_FLUSH_INTERVAL", "30"))
+    max_dirty = int(os.environ.get("CACHE_MAX_DIRTY", "100"))
+    flush_worker = FlushWorker(
+        inventory_cache,
+        product_repository,
+        lock_manager,
+        flush_interval_seconds=flush_interval,
+        max_dirty=max_dirty,
+    )
+
     supplier_repository = SupplierRepository(database_manager)
     transaction_repository = StockTransactionRepository(database_manager)
     role_repository = RoleRepository(database_manager)
     user_repository = UserRepository(database_manager)
     authentication = Authentication(user_repository)
-    lock_manager = LockManager()
     retry_policy = RetryPolicy()
     # Use a single constant so queue capacity and scheduler depth limit are
     # always in sync — two independent limits caused confusing double-rejection.
@@ -78,11 +101,15 @@ def build_application() -> ApplicationServices:
         product_repository=product_repository,
         transaction_repository=transaction_repository,
         database_manager=database_manager,
+        product_cache=inventory_cache,
     )
 
-    return ApplicationServices(
+    services = ApplicationServices(
         database_manager=database_manager,
-        product_repository=product_repository,
+        product_repository=cached_product_repository,
+        base_product_repository=product_repository,
+        inventory_cache=inventory_cache,
+        flush_worker=flush_worker,
         supplier_repository=supplier_repository,
         transaction_repository=transaction_repository,
         role_repository=role_repository,
@@ -94,6 +121,9 @@ def build_application() -> ApplicationServices:
         scheduler=scheduler,
         transaction_context=transaction_context,
     )
+    flush_worker.start()
+    atexit.register(flush_worker.stop, flush=True)
+    return services
 
 
 def main(argv: Sequence[str] | None = None) -> None:

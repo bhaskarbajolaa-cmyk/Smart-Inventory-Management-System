@@ -1,11 +1,8 @@
 """PostgreSQL database adapter — uses ``psycopg`` (psycopg3).
 
-To enable PostgreSQL support install the optional dependency::
-
-    pip install "psycopg[binary]>=3.1"
-
-Then set ``DatabaseConfig.backend = "postgresql"`` and supply ``host``,
-``port``, ``db_name``, ``user``, and ``password`` in ``DatabaseConfig``.
+PostgreSQL support is included in the project runtime dependencies. Set
+``DatabaseConfig.backend = "postgresql"`` and supply a PostgreSQL connection
+URL or the individual connection settings.
 
 Placeholder translation
 -----------------------
@@ -15,11 +12,7 @@ so no repository SQL needs to change when switching backends.
 
 Schema compatibility
 --------------------
-``schema.sql`` uses SQLite DDL (``AUTOINCREMENT``, ``INTEGER PRIMARY KEY``).
-When targeting PostgreSQL you should supply a separate PostgreSQL-compatible
-schema (``SERIAL PRIMARY KEY``, etc.).  The adapter will attempt to run
-``schema.sql`` anyway and log skipped statements, but a dedicated PostgreSQL
-schema is recommended for production use.
+The database manager supplies a PostgreSQL-specific schema for this adapter.
 """
 
 from __future__ import annotations
@@ -84,6 +77,21 @@ class PostgreSQLAdapter(DatabaseAdapter):
                 "psycopg is not installed. "
                 "Run: pip install \"psycopg[binary]>=3.1\""
             )
+        connection_string = getattr(config, "connection_string", "")
+        if connection_string:
+            connection_options: dict[str, Any] = {
+                "row_factory": _psycopg_dict_row,
+                "autocommit": True,
+                "connect_timeout": int(getattr(config, "timeout", 30)),
+            }
+            if "sslmode=" not in connection_string:
+                connection_options["sslmode"] = getattr(config, "sslmode", "require")
+            self._connection = psycopg.connect(  # type: ignore[union-attr]
+                connection_string,
+                **connection_options,
+            )
+            self._in_transaction = False
+            return
         parts = [
             f"host={config.host}",
             f"port={config.port}",
@@ -100,6 +108,7 @@ class PostgreSQLAdapter(DatabaseAdapter):
             conninfo,
             row_factory=_psycopg_dict_row,  # type: ignore[arg-type]
             autocommit=True,
+            sslmode=getattr(config, "sslmode", "require"),
         )
         self._in_transaction = False
 
@@ -124,39 +133,29 @@ class PostgreSQLAdapter(DatabaseAdapter):
         if self._connection is None:
             raise ConnectionError("PostgreSQL connection is not established.")
         pg_sql = _to_pg_sql(sql)
+        self.last_inserted_id = None
         with self._connection.cursor() as cursor:
             cursor.execute(pg_sql, tuple(params) if params else None)
             self.last_rowcount = cursor.rowcount
             # lastrowid is not available in psycopg3 directly; use RETURNING
-            try:
+            if cursor.description is not None:
                 rows: list[dict[str, Any]] = cursor.fetchall()
-            except Exception:
+            else:
                 rows = []
-            # Capture inserted ID if a RETURNING clause was used
-            if rows and "id" in rows[0]:
-                self.last_inserted_id = rows[0]["id"]
+            if rows and "RETURNING" in pg_sql.upper():
+                self.last_inserted_id = int(next(iter(rows[0].values())))
             return rows
 
     def execute_schema(self, schema_sql: str) -> None:
-        """Execute DDL; skips SQLite-specific statements that PostgreSQL rejects."""
+        """Execute all statements in the PostgreSQL-specific schema."""
         if self._connection is None:
             raise ConnectionError("PostgreSQL connection is not established.")
-        pg_sql = _to_pg_sql(schema_sql)
-        # Remove SQLite-only AUTOINCREMENT keyword (PostgreSQL uses SERIAL / IDENTITY)
-        pg_sql = pg_sql.replace(" AUTOINCREMENT", "")
-        for stmt in pg_sql.split(";"):
+        for stmt in schema_sql.split(";"):
             stmt = stmt.strip()
             if not stmt:
                 continue
-            # Skip PRAGMA statements — they are SQLite-specific
-            if stmt.upper().startswith("PRAGMA"):
-                continue
-            try:
-                with self._connection.cursor() as cursor:
-                    cursor.execute(stmt)
-            except Exception:
-                # Best-effort: log and continue so the remaining tables are created
-                pass
+            with self._connection.cursor() as cursor:
+                cursor.execute(stmt)
 
     # ------------------------------------------------------------------
     # Transaction management

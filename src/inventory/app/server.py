@@ -8,6 +8,7 @@ import re
 from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+import time
 from typing import Any
 
 from inventory.access_control.models import Role
@@ -281,7 +282,12 @@ def create_app(services: ApplicationServices | None = None) -> Any:
     @app.get("/health")
     def health() -> Any:
         """Report that the HTTP process is serving requests."""
-        return jsonify({"status": "ok"})
+        return jsonify(
+            {
+                "status": "ok",
+                "cache": services.inventory_cache.stats(),
+            }
+        )
 
     @app.post("/api/auth/register")
     def register() -> Any:
@@ -391,7 +397,9 @@ def create_app(services: ApplicationServices | None = None) -> Any:
             abort(400, description="Invalid product filter value.")
 
         products = services.product_repository.find_all(filters)
-        return jsonify([product_payload(product) for product in products])
+        response = jsonify([product_payload(product) for product in products])
+        response.headers["X-Cache"] = services.product_repository.last_cache_status
+        return response
 
     @app.get("/api/suppliers")
     def list_suppliers() -> Any:
@@ -407,7 +415,164 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         product = services.product_repository.find_by_id(product_id)
         if product is None:
             abort(404, description="Product not found.")
-        return jsonify(product_payload(product))
+        response = jsonify(product_payload(product))
+        response.headers["X-Cache"] = services.product_repository.last_cache_status
+        return response
+
+    @app.post("/api/cache/benchmark")
+    def benchmark_cache() -> Any:
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+
+        iterations = payload.get("iterations", 100)
+        if type(iterations) is not int or not 10 <= iterations <= 150:
+            abort(400, description="iterations must be an integer from 10 to 150.")
+
+        product_rows = services.database_manager.execute_query(
+            "SELECT product_id FROM products ORDER BY product_id ASC LIMIT 1"
+        )
+        if not product_rows:
+            abort(404, description="Add a product before running the cache benchmark.")
+        product_id = int(product_rows[0]["product_id"])
+
+        lock_token = services.lock_manager.acquire(
+            str(product_id),
+            owner_id=f"cache-benchmark:{time.monotonic_ns()}",
+            timeout_ms=1000,
+        )
+        if lock_token is None:
+            abort(503, description="Product is busy; try the benchmark again shortly.")
+
+        try:
+            product = services.base_product_repository.find_by_id(product_id)
+            if product is None:
+                abort(404, description="No product is available for benchmarking.")
+
+            services.inventory_cache.invalidate_product(product_id)
+            warm_started = time.perf_counter_ns()
+            cached_product = services.product_repository.find_by_id(product_id)
+            warm_elapsed_ns = time.perf_counter_ns() - warm_started
+            warm_read_ms = warm_elapsed_ns / 1_000_000
+            first_read_status = services.product_repository.last_cache_status
+            if cached_product is None:
+                abort(404, description="No product is available for benchmarking.")
+
+            stats_before = services.inventory_cache.stats()
+            database_elapsed_ns = 0
+            cache_elapsed_ns = 0
+            sample_step = max(1, iterations // 40)
+            series = [
+                {
+                    "requests": 0,
+                    "database_total_ms": 0.0,
+                    "cache_total_ms": warm_read_ms,
+                    "efficiency_percent": 0.0,
+                }
+            ]
+            for index in range(iterations):
+                if index % 2 == 0:
+                    started = time.perf_counter_ns()
+                    services.base_product_repository.find_by_id(product_id)
+                    database_elapsed_ns += time.perf_counter_ns() - started
+
+                    started = time.perf_counter_ns()
+                    services.product_repository.find_by_id(product_id)
+                    cache_elapsed_ns += time.perf_counter_ns() - started
+                else:
+                    started = time.perf_counter_ns()
+                    services.product_repository.find_by_id(product_id)
+                    cache_elapsed_ns += time.perf_counter_ns() - started
+
+                    started = time.perf_counter_ns()
+                    services.base_product_repository.find_by_id(product_id)
+                    database_elapsed_ns += time.perf_counter_ns() - started
+
+                completed = index + 1
+                if completed % sample_step == 0 or completed == iterations:
+                    database_total_ms = database_elapsed_ns / 1_000_000
+                    cache_total_ms = (
+                        warm_elapsed_ns + cache_elapsed_ns
+                    ) / 1_000_000
+                    series.append(
+                        {
+                            "requests": completed,
+                            "database_total_ms": database_total_ms,
+                            "cache_total_ms": cache_total_ms,
+                            "efficiency_percent": (
+                                (database_total_ms - cache_total_ms)
+                                / database_total_ms
+                                * 100
+                                if database_total_ms
+                                else 0.0
+                            ),
+                        }
+                    )
+
+            stats_after = services.inventory_cache.stats()
+            database_reads = iterations
+            cache_reads = iterations
+            database_avg_ms = database_elapsed_ns / database_reads / 1_000_000
+            cache_avg_ms = cache_elapsed_ns / cache_reads / 1_000_000
+            database_total_ms = database_elapsed_ns / 1_000_000
+            cache_total_ms = (
+                warm_elapsed_ns + cache_elapsed_ns
+            ) / 1_000_000
+            improvement_percent = (
+                (database_total_ms - cache_total_ms) / database_total_ms * 100
+                if database_total_ms > 0
+                else 0.0
+            )
+            hit_delta = int(stats_after["hits"]) - int(stats_before["hits"])
+            miss_delta = int(stats_after["misses"]) - int(stats_before["misses"])
+            cache_hit_rate = (
+                hit_delta / (hit_delta + miss_delta)
+                if hit_delta + miss_delta
+                else 0.0
+            )
+            break_even_reads = None
+            per_read_savings_ms = database_avg_ms - cache_avg_ms
+            if per_read_savings_ms > 0:
+                break_even_reads = max(
+                    0,
+                    int(warm_read_ms / per_read_savings_ms) + 1,
+                )
+
+            return jsonify(
+                {
+                    "iterations": iterations,
+                    "database": {
+                        "label": "Database only",
+                        "reads": database_reads,
+                        "total_ms": database_total_ms,
+                        "average_ms": database_avg_ms,
+                    },
+                    "cache": {
+                        "label": "Cache-aside (fill + reads)",
+                        "reads": cache_reads,
+                        "total_ms": cache_total_ms,
+                        "average_ms": cache_avg_ms,
+                        "policy": stats_after["policy"],
+                        "hit_rate": cache_hit_rate,
+                        "local_hits": (
+                            int(stats_after["local_hits"])
+                            - int(stats_before["local_hits"])
+                        ),
+                        "redis_hits": (
+                            int(stats_after["redis_hits"])
+                            - int(stats_before["redis_hits"])
+                        ),
+                        "first_read_ms": warm_read_ms,
+                        "first_read_status": first_read_status,
+                    },
+                    "improvement_percent": improvement_percent,
+                    "break_even_reads": break_even_reads,
+                    "series": series,
+                    "cache_stats": stats_after,
+                }
+            )
+        finally:
+            services.lock_manager.release(lock_token)
 
     @app.post("/api/products")
     def create_product() -> Any:

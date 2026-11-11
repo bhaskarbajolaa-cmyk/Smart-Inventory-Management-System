@@ -20,6 +20,54 @@ If PowerShell blocks activation, see [Troubleshooting](TROUBLESHOOTING.md#powers
 python -m pytest -q
 ```
 
+## Configure PostgreSQL or Redis
+
+The application uses SQLite by default. To configure Aiven PostgreSQL locally,
+copy `.env.example` to `.env` and set `DATABASE_URL` to the connection URL
+from the Aiven console. Keep the `.env` file private; it is ignored by Git.
+When `DATABASE_URL` is set, PostgreSQL is selected automatically. Aiven
+connections should use TLS (`sslmode=require`); the application defaults to
+that mode unless the URL already specifies an `sslmode`.
+
+Alternatively, set `DATABASE_BACKEND=postgresql` and fill in the `DB_HOST`,
+`DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` values. To use SQLite again,
+set `DATABASE_BACKEND=sqlite` and clear `DATABASE_URL`.
+
+Set `REDIS_URL` in the same `.env` file to connect to Upstash. If it is blank,
+the cache uses fakeredis in memory for local development. Set `CACHE_POLICY`,
+`CACHE_CAPACITY`, `CACHE_FLUSH_INTERVAL`, and `CACHE_MAX_DIRTY` to adjust the
+cache behavior.
+
+### Render deployment
+
+Render does not read the local `.env` file. The repository's `render.yaml`
+declares the runtime settings; if deploying with the Blueprint, enter
+`DATABASE_URL` and `REDIS_URL` when prompted, or add/update them under your
+Render service's **Environment** settings:
+
+| Key | Value |
+| --- | --- |
+| `DATABASE_URL` | Aiven's PostgreSQL connection URL, including `sslmode=require` |
+| `DATABASE_SSLMODE` | `require` |
+| `REDIS_URL` | Upstash Redis TLS URL (`rediss://...`) |
+| `CACHE_POLICY` | `lru` |
+| `CACHE_CAPACITY` | `64` |
+| `CACHE_FLUSH_INTERVAL` | `30` |
+| `CACHE_MAX_DIRTY` | `100` |
+
+Do not set `DATABASE_BACKEND=sqlite` on Render when using Aiven. With
+`DATABASE_URL` set, the app selects PostgreSQL automatically. Save the changes
+and trigger a deploy/restart. Render's build only installs dependencies; schema
+initialization and idempotent demo seeding happen when the app starts, so the
+build does not need to connect to Aiven.
+
+The cache demo remains an unlinked, standalone route at `/cache-demo` and does
+not change the home-page navigation or login flow. It is not authenticated:
+anyone who discovers the URL can use it, so treat it as a demo rather than a
+private admin tool. Its request graph counts benchmark reads in that browser
+page session only, not all visitors or total Render traffic. Never commit or
+paste connection URLs containing passwords into source control.
+
 The starter test checks that the package imports. Create a focused test file for the class or behavior you implement, then run just that file while working. For example, after creating `tests/test_catalog.py`:
 
 ```powershell

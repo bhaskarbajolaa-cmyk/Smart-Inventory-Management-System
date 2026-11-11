@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
+import threading
 from typing import Any, ClassVar
 
 from inventory.persistence.config import (
@@ -17,13 +18,15 @@ from inventory.persistence.config import (
     DEFAULT_DB_NAME,
     DEFAULT_HOST,
     DEFAULT_PORT,
+    load_environment,
 )
 from inventory.persistence.adapters.base import DatabaseAdapter
 
 
-def load_schema() -> str:
-    """Load the SQL schema DDL from the sibling ``schema.sql`` file."""
-    schema_file = Path(__file__).parent / "schema.sql"
+def load_schema(backend: str = "sqlite") -> str:
+    """Load the SQL schema DDL for the selected database backend."""
+    schema_name = "schema_postgresql.sql" if backend == "postgresql" else "schema.sql"
+    schema_file = Path(__file__).parent / schema_name
     return schema_file.read_text()
 
 
@@ -58,11 +61,15 @@ class DatabaseManager:
         if config is not None:
             self.config = config
         else:
-            self.config = DatabaseConfig(
-                host=host or DEFAULT_HOST,
-                port=port or DEFAULT_PORT,
-                db_name=db_name or DEFAULT_DB_NAME,
-            )
+            load_environment()
+            if host is None and port is None and db_name is None:
+                self.config = DatabaseConfig.from_environment()
+            else:
+                self.config = DatabaseConfig(
+                    host=host or DEFAULT_HOST,
+                    port=port or DEFAULT_PORT,
+                    db_name=db_name or DEFAULT_DB_NAME,
+                )
 
         # Convenience aliases kept for backwards-compat with existing code
         self.host = self.config.host
@@ -71,6 +78,9 @@ class DatabaseManager:
         self.connection_pool: Any = None  # reserved for future connection-pool support
 
         self._adapter: DatabaseAdapter | None = None
+        self._transaction_lock = threading.RLock()
+        self._transaction_owner: int | None = None
+        self._transaction_depth = 0
 
     # ------------------------------------------------------------------
     # Singleton helpers
@@ -98,8 +108,13 @@ class DatabaseManager:
         """Create the adapter, open the connection, and initialise the schema."""
         if self._adapter is None:
             self._adapter = self._create_adapter()
-            self._adapter.connect(self.config)
-            self.initialize_schema()
+            try:
+                self._adapter.connect(self.config)
+                self.initialize_schema()
+            except Exception:
+                self._adapter.close()
+                self._adapter = None
+                raise
         return self
 
     def _create_adapter(self) -> DatabaseAdapter:
@@ -115,15 +130,25 @@ class DatabaseManager:
         """Execute the schema DDL via the active adapter."""
         if self._adapter is None:
             raise ConnectionError("Database connection is not established.")
-        self._adapter.execute_schema(load_schema())
+        self._adapter.execute_schema(load_schema(self.config.backend))
 
     def close(self) -> None:
         """Close the adapter connection and release resources."""
-        if self._adapter is not None:
-            try:
-                self._adapter.close()
-            finally:
-                self._adapter = None
+        with self._transaction_lock:
+            if self._adapter is not None:
+                owned_depth = (
+                    self._transaction_depth
+                    if self._transaction_owner == threading.get_ident()
+                    else 0
+                )
+                try:
+                    self._adapter.close()
+                finally:
+                    self._adapter = None
+                    self._transaction_owner = None
+                    self._transaction_depth = 0
+                    for _ in range(owned_depth):
+                        self._transaction_lock.release()
 
     # ------------------------------------------------------------------
     # Query delegation
@@ -137,7 +162,15 @@ class DatabaseManager:
         """Execute a parameterised query and return its result rows."""
         if self._adapter is None:
             raise ConnectionError("Database connection is not established.")
-        return self._adapter.execute_query(sql, params)
+        with self._transaction_lock:
+            return self._adapter.execute_query(sql, params)
+
+    def execute_schema(self, schema_sql: str) -> None:
+        """Execute schema statements while excluding concurrent transactions."""
+        if self._adapter is None:
+            raise ConnectionError("Database connection is not established.")
+        with self._transaction_lock:
+            self._adapter.execute_schema(schema_sql)
 
     # ------------------------------------------------------------------
     # Transaction delegation
@@ -147,20 +180,65 @@ class DatabaseManager:
         """Start a transaction on the current connection."""
         if self._adapter is None:
             raise ConnectionError("Database connection is not established.")
-        self._adapter.begin_transaction()
+        self._transaction_lock.acquire()
+        try:
+            self._adapter.begin_transaction()
+        except Exception:
+            self._transaction_lock.release()
+            raise
+
+        owner = threading.get_ident()
+        if self._transaction_owner is None:
+            self._transaction_owner = owner
+            self._transaction_depth = 1
+        elif self._transaction_owner == owner:
+            self._transaction_depth += 1
+        else:
+            self._transaction_lock.release()
+            raise RuntimeError("Database transaction lock ownership is inconsistent.")
         return self
 
     def commit(self) -> None:
         """Commit the current transaction."""
         if self._adapter is None:
             raise ConnectionError("Database connection is not established.")
+        owner = threading.get_ident()
+        if self._transaction_owner is None:
+            with self._transaction_lock:
+                if self._transaction_owner is None:
+                    self._adapter.commit()
+            return
+        if self._transaction_owner != owner:
+            raise RuntimeError("Only the transaction-owning thread can commit.")
+        if self._transaction_depth > 1:
+            self._transaction_depth -= 1
+            self._transaction_lock.release()
+            return
         self._adapter.commit()
+        self._transaction_owner = None
+        self._transaction_depth = 0
+        self._transaction_lock.release()
 
     def rollback(self) -> None:
         """Roll back the current transaction."""
         if self._adapter is None:
             raise ConnectionError("Database connection is not established.")
-        self._adapter.rollback()
+        owner = threading.get_ident()
+        if self._transaction_owner is None:
+            with self._transaction_lock:
+                if self._transaction_owner is None:
+                    self._adapter.rollback()
+            return
+        if self._transaction_owner != owner:
+            return
+        depth = self._transaction_depth
+        try:
+            self._adapter.rollback()
+        finally:
+            self._transaction_owner = None
+            self._transaction_depth = 0
+            for _ in range(depth):
+                self._transaction_lock.release()
 
     # ------------------------------------------------------------------
     # Delegated read-only properties
