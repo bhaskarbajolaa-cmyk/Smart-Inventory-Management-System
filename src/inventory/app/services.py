@@ -11,7 +11,10 @@ if TYPE_CHECKING:
     from inventory.concurrency.queue import PriorityJobQueue
     from inventory.concurrency.retry import RetryPolicy
     from inventory.concurrency.scheduler import RequestScheduler
+    from inventory.cache.flush_worker import FlushWorker
+    from inventory.cache.inventory_cache import InventoryCache
     from inventory.persistence.database import DatabaseManager
+    from inventory.cache.repository import CachedProductRepository
     from inventory.persistence.repositories.products import ProductRepository
     from inventory.persistence.repositories.roles import RoleRepository
     from inventory.persistence.repositories.suppliers import SupplierRepository
@@ -25,7 +28,10 @@ class ApplicationServices:
     """Shared dependencies passed to CLI handlers and HTTP route handlers."""
 
     database_manager: DatabaseManager
-    product_repository: ProductRepository
+    product_repository: CachedProductRepository
+    base_product_repository: ProductRepository
+    inventory_cache: InventoryCache
+    flush_worker: FlushWorker
     supplier_repository: SupplierRepository
     transaction_repository: StockTransactionRepository
     role_repository: RoleRepository

@@ -6,12 +6,23 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any
+import logging
+from typing import TYPE_CHECKING, Any, Protocol
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from inventory.persistence.database import DatabaseManager
     from inventory.persistence.repositories.products import ProductRepository
     from inventory.persistence.repositories.transactions import StockTransactionRepository
+
+
+class ProductCache(Protocol):
+    """Cache invalidation contract used after committed stock changes."""
+
+    def invalidate_product(self, product_id: int) -> None: ...
+
+    def record_invalidation_failure(self) -> None: ...
 
 
 @dataclass
@@ -21,6 +32,7 @@ class TransactionContext:
     product_repository: ProductRepository
     transaction_repository: StockTransactionRepository
     database_manager: DatabaseManager
+    product_cache: ProductCache | None = None
 
 
 @dataclass
@@ -97,7 +109,6 @@ class Sale(StockTransaction):
             self.log_transaction(context)
 
             context.database_manager.commit()
-            return True
 
         except Exception as error:
             context.database_manager.rollback()
@@ -107,6 +118,17 @@ class Sale(StockTransaction):
                 self._product.quantity = self._original_quantity
             self.status = "failed"
             raise error
+
+        if context.product_cache is not None:
+            try:
+                context.product_cache.invalidate_product(self.product_id)
+            except Exception:
+                context.product_cache.record_invalidation_failure()
+                logger.exception(
+                    "Stock transaction committed, but product %s cache invalidation failed.",
+                    self.product_id,
+                )
+        return True
 
     def calculate_total(self) -> Decimal:
         """Multiply the sold quantity by the sale price."""
@@ -150,7 +172,6 @@ class Purchase(StockTransaction):
             self.log_transaction(context)
 
             context.database_manager.commit()
-            return True
 
         except Exception as error:
             context.database_manager.rollback()
@@ -158,6 +179,17 @@ class Purchase(StockTransaction):
                 self._product.quantity = self._original_quantity
             self.status = "failed"
             raise error
+
+        if context.product_cache is not None:
+            try:
+                context.product_cache.invalidate_product(self.product_id)
+            except Exception:
+                context.product_cache.record_invalidation_failure()
+                logger.exception(
+                    "Stock transaction committed, but product %s cache invalidation failed.",
+                    self.product_id,
+                )
+        return True
 
     def calculate_total(self) -> Decimal:
         """Multiply the purchased quantity by the unit cost."""

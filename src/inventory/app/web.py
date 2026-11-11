@@ -35,3 +35,7 @@ def register_page_routes(app: Flask) -> None:
     @app.get("/admin")
     def admin():
         return render_template("admiview.html")
+
+    @app.get("/cache-demo")
+    def cache_demo():
+        return render_template("cache_demo.html")

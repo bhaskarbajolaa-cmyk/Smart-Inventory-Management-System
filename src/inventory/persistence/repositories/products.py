@@ -176,6 +176,36 @@ class ProductRepository(Repository[Product, ProductFilter]):
                 entity.product_id = self.db.last_inserted_id
             return entity
 
+    def save_operational_fields(self, entity: Product) -> None:
+        """Persist stock and non-deferred product fields without changing name or price."""
+        sql = (
+            "UPDATE products "
+            "SET sku = ?, category = ?, quantity = ?, reorder_level = ?, "
+            "supplier_id = ?, updated_at = ? WHERE product_id = ?"
+        )
+        params: tuple[Any, ...] = (
+            entity.sku,
+            entity.category,
+            entity.quantity,
+            entity.reorder_level,
+            entity.supplier_id,
+            entity.updated_at.isoformat(),
+            entity.product_id,
+        )
+        rows = self.db.execute_query(sql + " RETURNING product_id", params)
+        if not rows:
+            raise KeyError(f"Product with ID {entity.product_id} does not exist.")
+
+    def save_metadata(self, product_id: int, name: str, unit_price: str) -> None:
+        """Persist only the metadata fields explicitly handled by write-behind."""
+        sql = "UPDATE products SET name = ?, unit_price = ? WHERE product_id = ?"
+        rows = self.db.execute_query(
+            sql + " RETURNING product_id",
+            (name, unit_price, product_id),
+        )
+        if not rows:
+            raise KeyError(f"Product with ID {product_id} does not exist.")
+
     def delete(self, entity_id: int) -> None:
         """Delete the product and define how related records are handled."""
         product = self.find_by_id(entity_id)
