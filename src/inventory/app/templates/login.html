@@ -229,7 +229,10 @@
                     sessionStorage.setItem("user_id", data.user_id);
                     sessionStorage.setItem("roles", JSON.stringify(data.roles || []));
                     showMessage("Login successful! Redirecting...", "success");
-                    setTimeout(() => { window.location.href = "{{ url_for('admin') }}"; }, 700);
+                    const roles = data.roles || [];
+                    const isAdmin = roles.includes("1") || roles.includes(1);
+                    const dest = isAdmin ? "{{ url_for('admin') }}" : "{{ url_for('home') }}";
+                    setTimeout(() => { window.location.href = dest; }, 700);
                 } else {
                     showMessage(data.description || "Invalid username or password.", "error");
                 }

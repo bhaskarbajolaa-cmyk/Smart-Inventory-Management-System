@@ -68,13 +68,68 @@ class RoleRepository(Repository[Role, object]):
         return self._row_to_role(rows[0])
 
     def find_all(self, filters: object | None = None) -> list[Role]:
-        # TODO: Return roles matching optional query criteria with grants loaded.
-        raise NotImplementedError
+        """Return all roles with their permission grants loaded."""
+        rows = self.db.execute_query(
+            "SELECT role_id, role_name, created_by, is_system_default, default_job_priority FROM roles ORDER BY role_id ASC"
+        )
+        return [self._row_to_role(row) for row in rows]
 
     def save(self, entity: Role) -> Role:
-        # TODO: Persist the role and its grant relationships atomically.
-        raise NotImplementedError
+        """Persist the role and its grant relationships."""
+        if entity.role_id > 0:
+            self.db.execute_query(
+                """UPDATE roles
+                   SET role_name = ?, default_job_priority = ?
+                   WHERE role_id = ?""",
+                (entity.role_name, entity.default_job_priority, entity.role_id),
+            )
+        else:
+            rows = self.db.execute_query(
+                """INSERT INTO roles (role_name, created_by, is_system_default, default_job_priority)
+                   VALUES (?, ?, ?, ?) RETURNING role_id""",
+                (
+                    entity.role_name,
+                    entity.created_by,
+                    1 if entity.is_system_default else 0,
+                    entity.default_job_priority,
+                ),
+            )
+            if rows:
+                entity.role_id = int(rows[0]["role_id"])
+
+        if entity.grants:
+            now_iso = datetime.now().isoformat()
+            for grant in entity.grants:
+                if grant.grant_id == 0:
+                    self.db.execute_query(
+                        """INSERT INTO table_access_grants
+                           (role_id, permission_id, table_name, granted_by, granted_at)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (
+                            entity.role_id,
+                            grant.permission_id,
+                            grant.table_name,
+                            grant.granted_by or entity.created_by,
+                            now_iso,
+                        ),
+                    )
+        return entity
 
     def delete(self, entity_id: int) -> None:
-        # TODO: Delete an eligible role and define behavior for assigned users.
-        raise NotImplementedError
+        """Delete an eligible non-system role not currently assigned to users."""
+        role = self.find_by_id(entity_id)
+        if role is None:
+            raise KeyError(f"Role {entity_id} does not exist.")
+        if role.is_system_default:
+            raise ValueError(f"System default role '{role.role_name}' cannot be deleted.")
+
+        user_rows = self.db.execute_query(
+            "SELECT COUNT(*) AS count FROM users WHERE role_id = ?", (entity_id,)
+        )
+        if user_rows and int(user_rows[0]["count"]) > 0:
+            raise ValueError(
+                f"Cannot delete role '{role.role_name}': {user_rows[0]['count']} active user(s) are assigned to it."
+            )
+
+        self.db.execute_query("DELETE FROM table_access_grants WHERE role_id = ?", (entity_id,))
+        self.db.execute_query("DELETE FROM roles WHERE role_id = ?", (entity_id,))
