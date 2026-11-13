@@ -782,6 +782,108 @@ def create_app(services: ApplicationServices | None = None) -> Any:
 
         return jsonify({"job_id": job_id, "status": "pending"}), 202
 
+    # ==================================================================
+    # Analytics & Statistical Intelligence Endpoints
+    # ==================================================================
+
+    def get_analytics() -> Any:
+        if services.analytics_service is not None:
+            return services.analytics_service
+        from inventory.analytics.service import AnalyticsService
+        return AnalyticsService(
+            database_manager=services.database_manager,
+            product_repository=services.base_product_repository,
+            transaction_repository=services.transaction_repository,
+            supplier_repository=services.supplier_repository,
+        )
+
+    @app.get("/api/analytics/overview")
+    def analytics_inventory_overview() -> Any:
+        require_session()
+        analytics = get_analytics()
+        return jsonify(analytics.get_inventory_overview())
+
+    @app.get("/api/analytics/sales")
+    def analytics_sales() -> Any:
+        require_session()
+        days_str = request.args.get("days", "30")
+        try:
+            days = int(days_str)
+        except ValueError:
+            days = 30
+        analytics = get_analytics()
+        return jsonify(analytics.get_sales_analytics(days=days))
+
+    @app.get("/api/analytics/purchases")
+    def analytics_purchases() -> Any:
+        require_session()
+        days_str = request.args.get("days", "30")
+        try:
+            days = int(days_str)
+        except ValueError:
+            days = 30
+        analytics = get_analytics()
+        return jsonify(analytics.get_purchase_analytics(days=days))
+
+    @app.get("/api/analytics/suppliers")
+    def analytics_suppliers() -> Any:
+        require_session()
+        analytics = get_analytics()
+        return jsonify(analytics.get_supplier_analytics())
+
+    @app.get("/api/analytics/stock-movement")
+    def analytics_stock_movement() -> Any:
+        require_session()
+        days_str = request.args.get("days", "30")
+        try:
+            days = int(days_str)
+        except ValueError:
+            days = 30
+        analytics = get_analytics()
+        return jsonify(analytics.get_stock_movement_analytics(days=days))
+
+    @app.get("/api/analytics/financials")
+    def analytics_financials() -> Any:
+        require_session()
+        analytics = get_analytics()
+        return jsonify(analytics.get_financial_analytics())
+
+    @app.get("/api/analytics/alerts")
+    def analytics_alerts() -> Any:
+        require_session()
+        analytics = get_analytics()
+        return jsonify(analytics.get_inventory_alerts())
+
+    @app.get("/api/analytics/abc")
+    def analytics_abc_classification() -> Any:
+        require_session()
+        analytics = get_analytics()
+        return jsonify(analytics.get_abc_analysis())
+
+    @app.get("/api/analytics/forecast")
+    def analytics_demand_forecast() -> Any:
+        require_session()
+        pid_raw = request.args.get("product_id")
+        horizon_raw = request.args.get("horizon", "30")
+        product_id = int(pid_raw) if pid_raw and pid_raw.isdigit() else None
+        try:
+            horizon = int(horizon_raw)
+        except ValueError:
+            horizon = 30
+        analytics = get_analytics()
+        return jsonify(analytics.get_demand_forecast(product_id=product_id, horizon_days=horizon))
+
+    @app.get("/api/analytics/reorder-recommendations")
+    def analytics_reorder_recommendations() -> Any:
+        require_session()
+        sl_raw = request.args.get("service_level", "0.95")
+        try:
+            service_level = float(sl_raw)
+        except ValueError:
+            service_level = 0.95
+        analytics = get_analytics()
+        return jsonify(analytics.get_reorder_recommendations(service_level=service_level))
+
     return app
 
 

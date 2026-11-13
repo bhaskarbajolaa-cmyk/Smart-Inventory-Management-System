@@ -243,6 +243,126 @@ def seed_products(db: DatabaseManager, supplier_ids: list[int]) -> None:
     print(f"  ✓ {inserted} products seeded (skipped existing)")
 
 
+def seed_transactions(db: DatabaseManager) -> None:
+    """Insert demo historical sales and purchases for analytics if table is empty."""
+    from datetime import timedelta, timezone
+    now = datetime.now(timezone.utc)
+
+    existing = db.execute_query("SELECT COUNT(*) AS cnt FROM stock_transactions")
+    if existing and int(existing[0]["cnt"]) > 0:
+        print("  ! Skipping transactions — transactions already exist.")
+        return
+
+    prods = db.execute_query("SELECT product_id, sku, unit_price, supplier_id FROM products")
+    if not prods:
+        return
+
+    user_rows = db.execute_query("SELECT user_id FROM users WHERE username = 'admin'")
+    user_id = int(user_rows[0]["user_id"]) if user_rows else 1
+
+    prod_map = {row["sku"]: row for row in prods}
+
+    # Deterministic simulation dataset over 60 days
+    # Patterns: High velocity: SKU-9921, SKU-1082; Moderate: SKU-9922, SKU-1083; Low: SKU-7741, SKU-4414
+    txns = []
+
+    # Initial restock purchases at day -55 and -25
+    for sku, p_data in prod_map.items():
+        price = float(p_data["unit_price"])
+        cost = round(price * 0.65, 2)
+        sup_id = p_data["supplier_id"] or 1
+        pid = p_data["product_id"]
+
+        # 2 restocks
+        for day_ago in (55, 25):
+            ts = (now - timedelta(days=day_ago, hours=4)).isoformat()
+            txns.append((
+                pid, user_id, 80, ts, "completed", "purchase",
+                None, None, None, str(cost), sup_id, user_id
+            ))
+
+    # Daily and periodic sales across the 60-day window
+    for d in range(58, 0, -1):
+        ts_base = now - timedelta(days=d)
+
+        # SKU-9921 (Cotton Fabric Rolls - fast moving, high value)
+        if d % 2 == 0 or d % 3 == 0:
+            p = prod_map.get("SKU-9921")
+            if p:
+                qty = 8 + (d % 7) * 2
+                ts = (ts_base.replace(hour=10 + (d % 6), minute=15)).isoformat()
+                txns.append((
+                    p["product_id"], user_id, qty, ts, "completed", "sale",
+                    str(p["unit_price"]), f"CUST-TEX-{1000 + d}", user_id, None, None, None
+                ))
+
+        # SKU-1082 (Barcode Label Rolls - fast moving, stationery)
+        if d % 2 != 0:
+            p = prod_map.get("SKU-1082")
+            if p:
+                qty = 15 + (d % 5) * 3
+                ts = (ts_base.replace(hour=14 + (d % 4), minute=30)).isoformat()
+                txns.append((
+                    p["product_id"], user_id, qty, ts, "completed", "sale",
+                    str(p["unit_price"]), f"CUST-OFF-{2000 + d}", user_id, None, None, None
+                ))
+
+        # SKU-9922 (Polyester Blend Fabric - moderate)
+        if d % 4 == 0:
+            p = prod_map.get("SKU-9922")
+            if p:
+                qty = 5 + (d % 4)
+                ts = (ts_base.replace(hour=11, minute=45)).isoformat()
+                txns.append((
+                    p["product_id"], user_id, qty, ts, "completed", "sale",
+                    str(p["unit_price"]), f"CUST-TEX-{3000 + d}", user_id, None, None, None
+                ))
+
+        # SKU-1083 (A4 Copy Paper - moderate)
+        if d % 3 == 0:
+            p = prod_map.get("SKU-1083")
+            if p:
+                qty = 10 + (d % 6)
+                ts = (ts_base.replace(hour=16, minute=10)).isoformat()
+                txns.append((
+                    p["product_id"], user_id, qty, ts, "completed", "sale",
+                    str(p["unit_price"]), f"CUST-OFF-{4000 + d}", user_id, None, None, None
+                ))
+
+        # SKU-4412 (Packaging Box Medium - low/moderate)
+        if d % 5 == 0:
+            p = prod_map.get("SKU-4412")
+            if p:
+                qty = 4 + (d % 3)
+                ts = (ts_base.replace(hour=12, minute=0)).isoformat()
+                txns.append((
+                    p["product_id"], user_id, qty, ts, "completed", "sale",
+                    str(p["unit_price"]), f"CUST-LOG-{5000 + d}", user_id, None, None, None
+                ))
+
+        # SKU-7741 (Industrial Scissors 10pcs - slow moving)
+        if d in (52, 41, 33, 21, 9, 3):
+            p = prod_map.get("SKU-7741")
+            if p:
+                ts = (ts_base.replace(hour=15, minute=20)).isoformat()
+                txns.append((
+                    p["product_id"], user_id, 2, ts, "completed", "sale",
+                    str(p["unit_price"]), f"CUST-TOOL-{6000 + d}", user_id, None, None, None
+                ))
+
+    # Insert transactions
+    sql = (
+        "INSERT INTO stock_transactions "
+        "(product_id, user_id, quantity, timestamp, status, transaction_type, "
+        "sale_price, customer_ref, sold_by_user_id, unit_cost, supplier_id, ordered_by_user_id) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    for row in txns:
+        db.execute_query(sql, row)
+
+    print(f"  ✓ {len(txns)} transactions seeded (sales & restock purchases over 60 days)")
+
+
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
@@ -255,24 +375,27 @@ def main() -> None:
     db = DatabaseManager.get_instance()
     db.connect()
 
-    print("\n[1/6] Seeding permissions...")
+    print("\n[1/7] Seeding permissions...")
     perm_ids = seed_permissions(db)
 
-    print("\n[2/6] Seeding Admin role...")
+    print("\n[2/7] Seeding Admin role...")
     seed_admin_role(db, perm_ids)
 
-    print("\n[3/6] Seeding Manager role...")
+    print("\n[3/7] Seeding Manager role...")
     seed_manager_role(db, perm_ids)
 
-    print("\n[4/6] Seeding Supervisor role...")
+    print("\n[4/7] Seeding Supervisor role...")
     seed_supervisor_role(db, perm_ids)
 
-    print("\n[5/6] Seeding default admin user...")
+    print("\n[5/7] Seeding default admin user...")
     seed_default_admin_user(db)
 
-    print("\n[6/6] Seeding suppliers and products...")
+    print("\n[6/7] Seeding suppliers and products...")
     supplier_ids = seed_suppliers(db)
     seed_products(db, supplier_ids)
+
+    print("\n[7/7] Seeding demo transaction history for analytics...")
+    seed_transactions(db)
 
     print("\n" + "=" * 40)
     print("✅  Seeding complete!\n")
@@ -284,3 +407,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

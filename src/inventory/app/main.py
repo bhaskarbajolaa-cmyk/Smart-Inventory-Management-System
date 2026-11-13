@@ -52,6 +52,7 @@ def _run_seed(database_manager: "DatabaseManager") -> None:
         seed_data.seed_default_admin_user(database_manager)
         supplier_ids = seed_data.seed_suppliers(database_manager)
         seed_data.seed_products(database_manager, supplier_ids)
+        seed_data.seed_transactions(database_manager)
     except Exception as exc:  # noqa: BLE001
         # Seeding is best-effort — never block app startup
         print(f"[seed] Warning: seeder raised {exc!r} — continuing without seed data.")
@@ -104,6 +105,15 @@ def build_application() -> ApplicationServices:
         product_cache=inventory_cache,
     )
 
+    from inventory.analytics.service import AnalyticsService
+
+    analytics_service = AnalyticsService(
+        database_manager=database_manager,
+        product_repository=product_repository,
+        transaction_repository=transaction_repository,
+        supplier_repository=supplier_repository,
+    )
+
     services = ApplicationServices(
         database_manager=database_manager,
         product_repository=cached_product_repository,
@@ -120,6 +130,7 @@ def build_application() -> ApplicationServices:
         job_queue=job_queue,
         scheduler=scheduler,
         transaction_context=transaction_context,
+        analytics_service=analytics_service,
     )
     flush_worker.start()
     atexit.register(flush_worker.stop, flush=True)

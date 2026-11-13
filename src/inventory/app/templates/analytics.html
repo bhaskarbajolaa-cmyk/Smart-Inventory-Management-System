@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics & Forecasting | SMOभर</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/homedesign.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+    <!-- Chart.js 4.4.2 via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="cursor-pattern-layer" id="smokePattern"></div>
+
+    <!-- Navigation Header -->
+    <div class="navbar-wrap">
+        <header class="navbar">
+            <a href="{{ url_for('home') }}" class="nav-brand">
+                <img src="{{ url_for('static', filename='img/smobharlogo1.png') }}" alt="SMOभर logo" class="brand-logo">
+                <span class="brand-name">
+                    <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
+                </span>
+            </a>
+            <div class="nav-right-group">
+                <nav class="nav-links">
+                    <a href="{{ url_for('home') }}">Inventory Table</a>
+                    <a href="{{ url_for('analytics_page') }}" class="active">Analytics & Intelligence</a>
+                    <a href="{{ url_for('workspace') }}">Workspace</a>
+                    <a href="{{ url_for('about') }}">About us</a>
+                    <a href="{{ url_for('admin') }}" id="navAdminLink" style="display: none;">Admin Command</a>
+                </nav>
+                <button type="button" class="logout-btn" id="logoutBtn">Log out</button>
+            </div>
+        </header>
+    </div>
+
+    <main class="analytics-container">
+        <!-- Page Title & Time Window Selector -->
+        <div class="analytics-header-flex">
+            <div class="analytics-header-title">
+                <h1>Statistical <span>Analytics & Intelligence</span></h1>
+                <p>Pareto ABC classification, statistical demand forecasting, and automated reorder recommendations.</p>
+            </div>
+            <div class="period-pill-group">
+                <button type="button" class="period-btn" data-days="7">7 Days</button>
+                <button type="button" class="period-btn active" data-days="30">30 Days</button>
+                <button type="button" class="period-btn" data-days="60">60 Days</button>
+                <button type="button" class="period-btn" data-days="0">All Time</button>
+            </div>
+        </div>
+
+        <!-- Top Level KPI Cards -->
+        <section class="kpi-grid">
+            <div class="kpi-glass-card">
+                <div class="kpi-label">Total Inventory Valuation</div>
+                <div class="kpi-value" id="kpiValuation">₹0.00</div>
+                <div class="kpi-subtitle" id="kpiTotalUnits">0 units in stock across catalog</div>
+            </div>
+            <div class="kpi-glass-card">
+                <div class="kpi-label">Sales Revenue (Selected Window)</div>
+                <div class="kpi-value" id="kpiRevenue">₹0.00</div>
+                <div class="kpi-subtitle" id="kpiGrossMargin">Gross Margin: 0.0%</div>
+            </div>
+            <div class="kpi-glass-card">
+                <div class="kpi-label">Inventory Turnover & DSI</div>
+                <div class="kpi-value" id="kpiTurnover">0.00x</div>
+                <div class="kpi-subtitle" id="kpiDSI">Days Sales of Inv: 0 days</div>
+            </div>
+            <div class="kpi-glass-card">
+                <div class="kpi-label">Active Inventory Alerts</div>
+                <div class="kpi-value text-urgent" id="kpiAlertCount">0</div>
+                <div class="kpi-subtitle text-warning" id="kpiUrgentReorder">0 urgent reorders required</div>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <div class="analytics-tab-bar">
+            <button class="analytics-tab active" data-tab="tab-overview">Overview & Financials</button>
+            <button class="analytics-tab" data-tab="tab-sales">Sales & Stock Movement</button>
+            <button class="analytics-tab" data-tab="tab-abc">ABC Pareto Analysis</button>
+            <button class="analytics-tab" data-tab="tab-forecast">Demand Forecasting & Reorder (ROP/EOQ)</button>
+            <button class="analytics-tab" data-tab="tab-alerts">Inventory Alerts & Monitoring</button>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 1: OVERVIEW & FINANCIALS -->
+        <!-- ============================================================== -->
+        <section class="tab-pane active" id="tab-overview">
+            <div class="two-col-grid">
+                <!-- Category Breakdown Chart -->
+                <div class="chart-glass-card">
+                    <div class="card-header-clean">
+                        <h3>Inventory Valuation by Category</h3>
+                        <span class="badge-tag">Asset Distribution</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Stock Health Distribution -->
+                <div class="chart-glass-card">
+                    <div class="card-header-clean">
+                        <h3>Stock Health & Availability</h3>
+                        <span class="badge-tag">Live Status</span>
+                    </div>
+                    <div class="stock-status-grid">
+                        <div class="status-pill status-healthy">
+                            <span class="status-num" id="healthyCount">0</span>
+                            <span class="status-desc">Healthy Stock</span>
+                        </div>
+                        <div class="status-pill status-low">
+                            <span class="status-num" id="lowCount">0</span>
+                            <span class="status-desc">Low Stock Warning</span>
+                        </div>
+                        <div class="status-pill status-out">
+                            <span class="status-num" id="outCount">0</span>
+                            <span class="status-desc">Out of Stock</span>
+                        </div>
+                        <div class="status-pill status-over">
+                            <span class="status-num" id="overCount">0</span>
+                            <span class="status-desc">Overstocked</span>
+                        </div>
+                    </div>
+                    <div class="financial-metrics-box">
+                        <div class="fin-row">
+                            <span>Cost of Goods Sold (COGS)</span>
+                            <strong id="finCOGS">₹0.00</strong>
+                        </div>
+                        <div class="fin-row">
+                            <span>Total Gross Profit</span>
+                            <strong id="finProfit" class="text-success">₹0.00</strong>
+                        </div>
+                        <div class="fin-row">
+                            <span>Total Procurement Spend</span>
+                            <strong id="finSpend">₹0.00</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Selling Products Table -->
+            <div class="table-glass-card" style="margin-top: 24px;">
+                <div class="card-header-clean">
+                    <h3>Top Performing Products by Revenue</h3>
+                    <span class="badge-tag">Best Sellers</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="analytics-table" id="topProductsTable">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>SKU</th>
+                                <th>Units Sold</th>
+                                <th>Total Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" class="text-center">Loading sales leaders...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 2: SALES & STOCK MOVEMENT -->
+        <!-- ============================================================== -->
+        <section class="tab-pane" id="tab-sales">
+            <div class="chart-glass-card" style="margin-bottom: 24px;">
+                <div class="card-header-clean">
+                    <h3>Sales Revenue & Units Sold Over Time</h3>
+                    <span class="badge-tag">Dual Axis Timeline</span>
+                </div>
+                <div class="chart-wrapper-large">
+                    <canvas id="salesTrendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="two-col-grid">
+                <!-- Inflow vs Outflow Chart -->
+                <div class="chart-glass-card">
+                    <div class="card-header-clean">
+                        <h3>Stock Movement (Inflow vs Outflow)</h3>
+                        <span class="badge-tag">Additions vs Removals</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="movementChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Product Sales Velocity -->
+                <div class="table-glass-card">
+                    <div class="card-header-clean">
+                        <h3>Product Movement Velocity</h3>
+                        <span class="badge-tag">Turnover Velocity</span>
+                    </div>
+                    <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+                        <table class="analytics-table" id="velocityTable">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>In Stock</th>
+                                    <th>Units Sold</th>
+                                    <th>Velocity (Units/Day)</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="5" class="text-center">Loading velocity rankings...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 3: ABC PARETO ANALYSIS -->
+        <!-- ============================================================== -->
+        <section class="tab-pane" id="tab-abc">
+            <div class="two-col-grid" style="margin-bottom: 24px;">
+                <!-- Pareto Curve Chart -->
+                <div class="chart-glass-card">
+                    <div class="card-header-clean">
+                        <h3>Pareto 80/20 Cumulative Consumption Curve</h3>
+                        <span class="badge-tag">Cumulative Value %</span>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="paretoChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- ABC Tier Summary Cards -->
+                <div class="abc-summary-col">
+                    <div class="abc-card abc-a">
+                        <div class="abc-badge">Class A</div>
+                        <div class="abc-details">
+                            <h4>High Value (Top 80% Value)</h4>
+                            <p id="abcSummaryA">0 items (0.0% of catalog) generating ₹0.00 (0.0% value)</p>
+                            <span class="abc-action-note">Action: Strict daily control, accurate forecasting, low safety stock.</span>
+                        </div>
+                    </div>
+                    <div class="abc-card abc-b">
+                        <div class="abc-badge">Class B</div>
+                        <div class="abc-details">
+                            <h4>Moderate Value (Next 15% Value)</h4>
+                            <p id="abcSummaryB">0 items (0.0% of catalog) generating ₹0.00 (0.0% value)</p>
+                            <span class="abc-action-note">Action: Regular periodic review and automated reorders.</span>
+                        </div>
+                    </div>
+                    <div class="abc-card abc-c">
+                        <div class="abc-badge">Class C</div>
+                        <div class="abc-details">
+                            <h4>Low Value (Remaining 5% Value)</h4>
+                            <p id="abcSummaryC">0 items (0.0% of catalog) generating ₹0.00 (0.0% value)</p>
+                            <span class="abc-action-note">Action: Bulk purchasing, high safety stock, minimal administrative oversight.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full ABC Classified Catalog Table -->
+            <div class="table-glass-card">
+                <div class="card-header-clean">
+                    <h3>ABC Classification Ledger</h3>
+                    <div class="filter-pills">
+                        <button class="pill-btn active" data-abc-filter="ALL">All Items</button>
+                        <button class="pill-btn" data-abc-filter="A">Class A</button>
+                        <button class="pill-btn" data-abc-filter="B">Class B</button>
+                        <button class="pill-btn" data-abc-filter="C">Class C</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="analytics-table" id="abcTable">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Product Name</th>
+                                <th>SKU</th>
+                                <th>Category</th>
+                                <th>Current Stock</th>
+                                <th>Annual Units Sold</th>
+                                <th>Consumption Value</th>
+                                <th>Cumulative %</th>
+                                <th>Tier</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="9" class="text-center">Calculating Pareto classification...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 4: DEMAND FORECASTING & SMART REORDERS -->
+        <!-- ============================================================== -->
+        <section class="tab-pane" id="tab-forecast">
+            <!-- Product Selector & Forecast Accuracy Controls -->
+            <div class="forecast-control-bar">
+                <div class="control-group">
+                    <label for="forecastProductSelect">Select Product for Time Series Forecasting:</label>
+                    <select id="forecastProductSelect" class="analytics-select">
+                        <option value="">Loading products...</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="forecastHorizonSelect">Forecast Horizon:</label>
+                    <select id="forecastHorizonSelect" class="analytics-select">
+                        <option value="14">14 Days Ahead</option>
+                        <option value="30" selected>30 Days Ahead</option>
+                        <option value="60">60 Days Ahead</option>
+                    </select>
+                </div>
+                <div class="accuracy-metrics-pills">
+                    <div class="metric-pill"><span>MAE:</span> <strong id="metricMAE">0.00</strong></div>
+                    <div class="metric-pill"><span>RMSE:</span> <strong id="metricRMSE">0.00</strong></div>
+                    <div class="metric-pill"><span>MAPE:</span> <strong id="metricMAPE">0.0%</strong></div>
+                </div>
+            </div>
+
+            <!-- Forecast Projection Chart -->
+            <div class="chart-glass-card" style="margin-bottom: 24px;">
+                <div class="card-header-clean">
+                    <h3 id="forecastChartTitle">Historical Demand vs Statistical Forecast</h3>
+                    <span class="badge-tag">Holt-Winters & 95% Confidence Bounds</span>
+                </div>
+                <div class="chart-wrapper-large">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Smart Reorder Recommendations Table (ROP & EOQ) -->
+            <div class="table-glass-card">
+                <div class="card-header-clean">
+                    <div>
+                        <h3>Smart Reorder Recommendations & Safety Stock Matrix</h3>
+                        <p class="section-desc">Computed using Mean Daily Demand (μ_d), Demand Volatility (σ_d), Safety Stock (SS), Reorder Point (ROP), and Economic Order Quantity (EOQ).</p>
+                    </div>
+                    <div class="service-level-box">
+                        <label for="serviceLevelSelect">Service Level:</label>
+                        <select id="serviceLevelSelect" class="analytics-select-compact">
+                            <option value="0.90">90% (Z = 1.28)</option>
+                            <option value="0.95" selected>95% (Z = 1.65)</option>
+                            <option value="0.98">98% (Z = 2.05)</option>
+                            <option value="0.99">99% (Z = 2.33)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="analytics-table" id="reorderTable">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>In Stock</th>
+                                <th>Daily Demand (μ_d)</th>
+                                <th>Volatility (σ_d)</th>
+                                <th>Safety Stock (SS)</th>
+                                <th>Reorder Point (ROP)</th>
+                                <th>EOQ</th>
+                                <th>Recommended Order</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="9" class="text-center">Calculating reorder points...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 5: INVENTORY ALERTS & MONITORING -->
+        <!-- ============================================================== -->
+        <section class="tab-pane" id="tab-alerts">
+            <div class="alerts-container-glass">
+                <div class="card-header-clean">
+                    <h3>Active Inventory Alerts</h3>
+                    <div class="alerts-summary-tags">
+                        <span class="alert-tag critical" id="alertCritTag">0 Critical</span>
+                        <span class="alert-tag warning" id="alertWarnTag">0 Warning</span>
+                        <span class="alert-tag action" id="alertActionTag">0 Action Required</span>
+                        <span class="alert-tag info" id="alertInfoTag">0 Info</span>
+                    </div>
+                </div>
+                <div id="alertsFeed" class="alerts-feed">
+                    <div class="alert-loading">Scanning inventory for anomalies and stock thresholds...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+</body>
+</html>

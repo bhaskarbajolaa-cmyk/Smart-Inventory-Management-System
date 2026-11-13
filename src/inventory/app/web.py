@@ -43,3 +43,7 @@ def register_page_routes(app: Flask) -> None:
     @app.get("/cache-traffic")
     def cache_traffic_page():
         return render_template("cache_traffic.html")
+
+    @app.get("/analytics")
+    def analytics_page():
+        return render_template("analytics.html")
