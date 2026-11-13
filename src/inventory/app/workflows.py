@@ -24,6 +24,10 @@ def submit_sale_job(
         raise LookupError(f"Product {product_id} does not exist.")
     if quantity < 1:
         raise ValueError("Sale quantity must be greater than zero.")
+    if quantity > product.quantity:
+        raise ValueError(
+            f"Insufficient stock. Available: {product.quantity}, Requested: {quantity}"
+        )
 
     sale = Sale(
         transaction_id=0,
