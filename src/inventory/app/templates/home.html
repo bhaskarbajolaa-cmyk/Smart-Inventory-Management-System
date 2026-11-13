@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/homedesign.css') }}">
 </head>
 <body>
+    <!-- Hidden SVG Filter: Liquid water displacement waves -->
     <svg class="svg-filter-hidden">
         <filter id="waterFilter">
             <feTurbulence id="waterTurbulence" type="fractalNoise" baseFrequency="0.015 0.015" numOctaves="3" result="noise" />
@@ -14,8 +15,10 @@
         </filter>
     </svg>
 
+    <!-- Cursor Interactive Circular Mask Layer (prodbg.png water ripple mask) -->
     <div class="cursor-pattern-layer" id="smokePattern"></div>
 
+    <!-- Top Sticky Navbar -->
     <div class="navbar-wrap">
         <header class="navbar">
             <a href="{{ url_for('home') }}" class="nav-brand">
@@ -24,24 +27,30 @@
                     <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
                 </span>
             </a>
+
             <div class="nav-right-group">
                 <nav class="nav-links">
-                    <a href="{{ url_for('home') }}" class="active">Inventory Table</a>
+                    <a href="#inventorySection" class="active">Inventory Table</a>
                     <a href="{{ url_for('analytics_page') }}">Analytics & Intelligence</a>
                     <a href="{{ url_for('about') }}">About us</a>
-                    <a href="{{ url_for('admin') }}" id="navAdminLink" style="display: none;">Admin Command</a>
+                    <a href="{{ url_for('admin') }}" id="navAdminLink" style="display: none;">Admin Panel</a>
                 </nav>
+
                 <button type="button" class="logout-btn" id="logoutBtn">Log out</button>
             </div>
         </header>
     </div>
 
+    <!-- Main Workspace Container -->
     <main class="home-container" id="inventorySection">
+        
+        <!-- Header: Admin button removed, only Workspace navigation retained -->
         <div class="workspace-header-flex">
             <div class="workspace-header-title">
                 <h1>Master <span>Inventory Ledger</span></h1>
                 <p>Manage product stock levels, pricing, reorder points, and suppliers.</p>
             </div>
+
             <div class="route-nav-group">
                 <a href="{{ url_for('workspace') }}" class="btn-route-pill" title="Go to Canvas Workspace">
                     <span class="route-icon">&larr;</span>
@@ -50,50 +59,19 @@
             </div>
         </div>
 
-        <!-- Filter Bar -->
-        <section class="table-glass-card" style="margin-bottom: 20px; padding: 20px 38px;">
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:#646875; display:block; margin-bottom:4px;">Search</label>
-                    <input type="text" id="filterSearch" class="table-search-input" placeholder="Name, SKU, category...">
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:#646875; display:block; margin-bottom:4px;">Category</label>
-                    <input type="text" id="filterCategory" class="table-search-input" style="width:140px;" placeholder="e.g. Textiles">
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:#646875; display:block; margin-bottom:4px;">Supplier ID</label>
-                    <input type="number" id="filterSupplier" class="table-search-input" style="width:110px;" placeholder="e.g. 101">
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:#646875; display:block; margin-bottom:4px;">Min Price</label>
-                    <input type="number" id="filterMinPrice" class="table-search-input" style="width:110px;" placeholder="0.00" min="0" step="0.01">
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:700; color:#646875; display:block; margin-bottom:4px;">Max Price</label>
-                    <input type="number" id="filterMaxPrice" class="table-search-input" style="width:110px;" placeholder="0.00" min="0" step="0.01">
-                </div>
-                <div style="display:flex; align-items:center; gap:8px; padding-bottom:2px;">
-                    <input type="checkbox" id="filterLowStock" style="accent-color:#ea2330; width:16px; height:16px;">
-                    <label for="filterLowStock" style="font-size:13px; font-weight:600; color:#0d0e12; cursor:pointer;">Low Stock Only</label>
-                </div>
-                <button type="button" class="btn-open-modal" id="applyFiltersBtn" style="height:44px;">Apply Filters</button>
-                <button type="button" class="btn-open-modal" id="clearFiltersBtn" style="height:44px; background:#64748b;">Clear</button>
-            </div>
-            <p class="message" id="filterError" style="margin-top:8px;"></p>
-        </section>
-
+        <!-- Live Inventory Table (Top Focus) -->
         <section class="table-glass-card">
             <div class="table-header-bar">
                 <h3>Live Product Inventory</h3>
+                
                 <div class="table-actions-cluster">
+                    <input type="text" id="tableSearchInput" class="table-search-input" placeholder="Search table items...">
+                    <!-- Primary Add Product Button opens popup modal -->
                     <button type="button" class="btn-open-modal" id="openAddProductModalBtn">
                         <span>+ Add Product</span>
                     </button>
                 </div>
             </div>
-
-            <div id="tableStatus" style="text-align:center; padding:16px; color:#64748b; font-weight:600; display:none;"></div>
 
             <div style="overflow-x: auto;">
                 <table class="inventory-table">
@@ -106,98 +84,119 @@
                             <th>Unit Price (₹)</th>
                             <th>Reorder Level</th>
                             <th>Supplier ID</th>
-                            <th style="width:100px; text-align:right;">Actions</th>
+                            <th style="width: 100px; text-align: right;">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="inventoryTableBody"></tbody>
+                    <tbody id="inventoryTableBody">
+                        <!-- Rendered dynamically via JavaScript -->
+                    </tbody>
                 </table>
             </div>
         </section>
+
     </main>
 
-    <!-- Modal: Add New Product -->
+    <!-- Modal: Add New Product Record -->
     <div class="modal-overlay" id="addProductModal" aria-hidden="true">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 id="addProductModalTitle">+ Add New Product Record</h3>
+                <h3>+ Add New Product Record</h3>
                 <button type="button" class="modal-close-btn" id="closeAddProductModalBtn">&times;</button>
             </div>
             <form id="itemEntryForm">
                 <div class="modal-body">
                     <div class="form-grid-modal">
+                        
                         <div class="form-field form-field-full">
                             <label for="inputItemName">Product / Item Name</label>
                             <input type="text" id="inputItemName" class="field-input-box" placeholder="e.g. Cotton Fabric Rolls" required>
                         </div>
+
                         <div class="form-field">
                             <label for="inputSKU">SKU Code</label>
                             <input type="text" id="inputSKU" class="field-input-box" placeholder="e.g. SKU-9921" required>
                         </div>
+
                         <div class="form-field">
                             <label for="inputCategory">Category</label>
-                            <input type="text" id="inputCategory" class="field-input-box" placeholder="e.g. Textiles" required>
+                            <input type="text" id="inputCategory" class="field-input-box" placeholder="e.g. Textiles, Logistics" required>
                         </div>
+
                         <div class="form-field">
                             <label for="inputQty">Initial Quantity</label>
                             <input type="number" id="inputQty" class="field-input-box" placeholder="0" min="0" required>
                         </div>
+
                         <div class="form-field">
                             <label for="inputPrice">Unit Price (₹)</label>
                             <input type="number" step="0.01" id="inputPrice" class="field-input-box" placeholder="0.00" min="0" required>
                         </div>
+
                         <div class="form-field">
                             <label for="inputReorder">Reorder Alert Level</label>
                             <input type="number" id="inputReorder" class="field-input-box" placeholder="e.g. 50" min="0" required>
                         </div>
+
                         <div class="form-field">
                             <label for="inputSupplier">Supplier</label>
                             <select id="inputSupplier" class="field-input-box" required>
-                                <option value="">Loading suppliers…</option>
+                                <option value="">Select Supplier...</option>
                             </select>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-modal-cancel" id="cancelModalBtn">Cancel</button>
+                    <button type="submit" class="btn-modal-save">
+                        <span>✓ Save Record</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Record Product Sale -->
+    <div class="modal-overlay" id="recordSaleModal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🛒 Record Product Sale</h3>
+                <button type="button" class="modal-close-btn" id="closeSaleModalBtn">&times;</button>
+            </div>
+            <form id="saleEntryForm">
+                <input type="hidden" id="saleProductId">
+                <div class="modal-body">
+                    <div class="form-grid-modal">
+                        <div class="form-field form-field-full">
+                            <label for="saleProductName">Selected Product</label>
+                            <input type="text" id="saleProductName" class="field-input-box" readonly style="background: rgba(0,0,0,0.04); font-weight: 700;">
+                        </div>
+                        <div class="form-field">
+                            <label for="saleCurrentStock">Available Stock</label>
+                            <input type="text" id="saleCurrentStock" class="field-input-box" readonly style="background: rgba(0,0,0,0.04);">
+                        </div>
+                        <div class="form-field">
+                            <label for="saleQuantity">Quantity to Sell</label>
+                            <input type="number" id="saleQuantity" class="field-input-box" min="1" placeholder="e.g. 5" required>
+                        </div>
+                        <div class="form-field form-field-full">
+                            <label for="saleCustomerRef">Customer / Order Reference</label>
+                            <input type="text" id="saleCustomerRef" class="field-input-box" placeholder="e.g. ORD-2026-881">
                         </div>
                     </div>
                 </div>
-                <p id="productFormError" class="message" style="color:#ea2330; font-size:12px; margin:0 24px;"></p>
-                <div class="modal-footer">
-                    <button type="button" class="btn-modal-cancel" id="cancelModalBtn">Cancel</button>
-                    <button type="submit" class="btn-modal-save" id="saveProductBtn"><span>✓ Save Record</span></button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal: Submit Sale -->
-    <div class="modal-overlay" id="saleModal" aria-hidden="true">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>Submit Sale</h3>
-                <button type="button" class="modal-close-btn" id="closeSaleModalBtn">&times;</button>
-            </div>
-            <form id="saleForm">
-                <div class="modal-body">
-                    <div class="form-field form-field-full">
-                        <label for="saleProductId">Product ID</label>
-                        <input type="number" id="saleProductId" class="field-input-box" readonly>
-                        <small id="saleStockInfo" style="color: #bbb; display: block; margin-top: 4px; font-weight: 500;"></small>
-                    </div>
-                    <div class="form-field form-field-full">
-                        <label for="saleQty">Quantity</label>
-                        <input type="number" id="saleQty" class="field-input-box" placeholder="e.g. 5" min="1" required>
-                    </div>
-                    <div class="form-field form-field-full">
-                        <label for="saleCustomerRef">Customer Ref (optional)</label>
-                        <input type="text" id="saleCustomerRef" class="field-input-box" placeholder="e.g. ORD-001">
-                    </div>
-                    <p class="message" id="saleMessage"></p>
-                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-modal-cancel" id="cancelSaleModalBtn">Cancel</button>
-                    <button type="submit" class="btn-modal-save" id="saleSaveBtn"><span>Submit Sale</span></button>
+                    <button type="submit" class="btn-modal-save" style="background: var(--primary-red); box-shadow: 0 4px 14px var(--primary-red-glow);">
+                        <span>✓ Confirm Sale</span>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Exact Black Footer (Strictly Below the Fold - Visible only on Scroll)[cite: 5] -->
     <footer class="site-footer" id="aboutFooter">
         <div class="footer-top">
             <h2 class="footer-main-title">Design by Artham</h2>
@@ -206,7 +205,9 @@
                 <span>@designwithartham</span>
             </a>
         </div>
+
         <div class="footer-divider"></div>
+
         <div class="footer-columns">
             <div class="footer-col">
                 <h3>About Us</h3>
@@ -216,463 +217,468 @@
                     <li><a href="#">Careers</a></li>
                     <li><a href="#">What We Offer</a></li>
                 </ul>
-                <p class="footer-tagline">Crafting unscripted moments that turn strangers into a tribe.</p>
+                <p class="footer-tagline">
+                    Crafting unscripted moments that turn strangers into a tribe.
+                </p>
             </div>
+
             <div class="footer-col">
-                <h3>Terms &amp; Info</h3>
+                <h3>Terms & Info</h3>
                 <ul>
                     <li><a href="#">Disclaimer</a></li>
-                    <li><a href="#">Terms &amp; Conditions</a></li>
+                    <li><a href="#">Terms & Conditions</a></li>
                     <li><a href="#">Privacy</a></li>
                     <li><a href="#">Cancellation</a></li>
                 </ul>
             </div>
         </div>
+
         <div class="footer-bottom-bar">
             <div class="footer-bottom-left">
                 <span class="footer-brand-mini">SMOभर</span>
                 <span>&copy; 2026 SAFARNAMA. All Rights Reserved.</span>
             </div>
-            <div class="footer-bottom-right"><span>&#127760; ENG &middot; INR</span></div>
+            <div class="footer-bottom-right">
+                <span>&#127760; ENG &middot; INR</span>
+            </div>
         </div>
     </footer>
 
+    <!-- Toast Notification -->
     <div class="toast-notice" id="toastNotice">Action Completed</div>
 
+    <!-- JavaScript Engine -->
     <script>
-        // ── Auth guard ──
-        const token = sessionStorage.getItem("session_token");
-        if (!token) { window.location.href = "{{ url_for('login') }}"; }
-
-        let loadedProducts = [];
-        let editingProductId = null;
-        let permissions = new Set();
-
-        function can(code) { return permissions.has(code); }
-
-        // ── Helpers ──
-        function authHeader() {
-            return { "Authorization": "Bearer " + sessionStorage.getItem("session_token"), "Content-Type": "application/json" };
-        }
-
-        async function apiGet(url) {
-            const res = await fetch(url, { headers: authHeader() });
-            if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; }
-            return res;
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById("toastNotice");
-            t.textContent = msg; t.style.display = "block";
-            setTimeout(() => { t.style.display = "none"; }, 3000);
-        }
-
-        // ── Water ripple ──
+        // 1. Water Ripple Effect & Cursor Movement
         const smokePattern = document.getElementById("smokePattern");
         const turbulence = document.getElementById("waterTurbulence");
+
         window.addEventListener("mousemove", (e) => {
             smokePattern.style.setProperty("--mouse-x", e.clientX + "px");
             smokePattern.style.setProperty("--mouse-y", e.clientY + "px");
         });
+
+        window.addEventListener("touchmove", (e) => {
+            if (e.touches.length > 0) {
+                const t = e.touches[0];
+                smokePattern.style.setProperty("--mouse-x", t.clientX + "px");
+                smokePattern.style.setProperty("--mouse-y", t.clientY + "px");
+            }
+        });
+
         let frame = 0;
         function animateWater() {
             frame += 0.008;
-            turbulence.setAttribute("baseFrequency", `${0.015 + Math.sin(frame)*0.003} ${0.018 + Math.cos(frame*0.8)*0.003}`);
+            const freqX = 0.015 + Math.sin(frame) * 0.003;
+            const freqY = 0.018 + Math.cos(frame * 0.8) * 0.003;
+            turbulence.setAttribute("baseFrequency", `${freqX} ${freqY}`);
             requestAnimationFrame(animateWater);
         }
         animateWater();
 
-        // ── Render table ──
-        function esc(value) {
-            const div = document.createElement("div");
-            div.textContent = value == null ? "" : String(value);
-            return div.innerHTML;
+        // 2. State & Auth Helpers
+        let products = [];
+        let suppliers = [];
+        let suppliersMap = {};
+        let editingRowId = null;
+
+        function getAuthHeaders() {
+            const token = localStorage.getItem("smobhar_session_token");
+            const headers = { "Content-Type": "application/json" };
+            if (token) headers["Authorization"] = "Bearer " + token;
+            return headers;
         }
 
-        function renderTable(products) {
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById("toastNotice");
+            toast.textContent = msg;
+            toast.style.background = isError ? "#ef4444" : "#10b981";
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; }, 3500);
+        }
+
+        // 3. Load Suppliers & Products from Backend API
+        async function loadSuppliers() {
+            try {
+                const res = await fetch("/api/suppliers", { headers: getAuthHeaders() });
+                if (res.ok) {
+                    suppliers = await res.json();
+                    suppliersMap = {};
+                    const select = document.getElementById("inputSupplier");
+                    select.innerHTML = '<option value="">Select Supplier...</option>';
+                    suppliers.forEach(s => {
+                        suppliersMap[s.supplier_id] = s.name;
+                        const opt = document.createElement("option");
+                        opt.value = s.supplier_id;
+                        opt.textContent = `${s.name} (SUP-${s.supplier_id})`;
+                        select.appendChild(opt);
+                    });
+                    if (products.length) renderTable();
+                }
+            } catch (err) {
+                console.warn("Could not load suppliers:", err);
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await fetch("/api/products", { headers: getAuthHeaders() });
+                if (res.status === 401) {
+                    localStorage.removeItem("smobhar_session_token");
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+                if (res.ok) {
+                    products = await res.json();
+                    renderTable();
+                } else {
+                    const err = await res.json();
+                    showToast(err.description || "Failed to load products.", true);
+                }
+            } catch (err) {
+                showToast("Network error connecting to products API.", true);
+            }
+        }
+
+        // 4. Render Table
+        function renderTable() {
             const tbody = document.getElementById("inventoryTableBody");
-            const status = document.getElementById("tableStatus");
+            const search = document.getElementById("tableSearchInput").value.trim().toLowerCase();
+
             tbody.innerHTML = "";
-            if (!products || products.length === 0) {
-                status.textContent = "No matching inventory items found.";
-                status.style.display = "block";
+
+            const filtered = products.filter(it => {
+                const sName = (suppliersMap[it.supplier_id] || "").toLowerCase();
+                return it.name.toLowerCase().includes(search) ||
+                    it.sku.toLowerCase().includes(search) ||
+                    it.category.toLowerCase().includes(search) ||
+                    sName.includes(search) ||
+                    String(it.supplier_id).includes(search);
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:32px; color:#64748b;">No matching inventory items found. Add a record!</td></tr>`;
                 return;
             }
-            status.style.display = "none";
-            products.forEach(p => {
-                const lowStock = p.quantity <= p.reorder_level;
+
+            filtered.forEach(it => {
                 const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td><strong>${esc(p.name)}</strong>${lowStock ? ' <span style="color:#ea2330; font-size:11px; font-weight:800;">⚠ LOW</span>' : ''}</td>
-                    <td><span class="sku-tag">${esc(p.sku)}</span></td>
-                    <td><span class="category-badge">${esc(p.category)}</span></td>
-                    <td><strong>${esc(p.quantity)}</strong></td>
-                    <td><span class="price-tag">₹${parseFloat(p.unit_price).toFixed(2)}</span></td>
-                    <td><span class="reorder-tag">${esc(p.reorder_level)}</span></td>
-                    <td><span class="sup-tag">${esc(p.supplier_id ?? 'N/A')}</span></td>
-                    <td style="text-align:right;">
-                        <div class="action-btn-group" style="justify-content:flex-end;">
-                            ${can("APPEND") ? `<button type="button" class="btn-icon-action btn-icon-edit" onclick="openSaleModal(${p.product_id})" title="Submit Sale">🛒</button>` : ""}
-                            ${can("EDIT") ? `<button type="button" class="btn-icon-action btn-icon-edit" onclick="openEditModal(${p.product_id})" title="Edit Product">✎</button>` : ""}
-                            ${can("DELETE") ? `<button type="button" class="btn-icon-action btn-icon-delete" onclick="deleteProduct(${p.product_id})" title="Delete Product">✕</button>` : ""}
-                        </div>
-                    </td>`;
+
+                if (editingRowId === it.product_id) {
+                    // Inline Edit Mode
+                    let supplierOptions = "";
+                    suppliers.forEach(s => {
+                        const sel = s.supplier_id === it.supplier_id ? "selected" : "";
+                        supplierOptions += `<option value="${s.supplier_id}" ${sel}>${s.name}</option>`;
+                    });
+
+                    tr.innerHTML = `
+                        <td><input type="text" class="inline-edit-input" id="editName_${it.product_id}" value="${it.name}"></td>
+                        <td><input type="text" class="inline-edit-input" id="editSKU_${it.product_id}" value="${it.sku}"></td>
+                        <td><input type="text" class="inline-edit-input" id="editCategory_${it.product_id}" value="${it.category}"></td>
+                        <td><input type="number" class="inline-edit-input" id="editQty_${it.product_id}" value="${it.quantity}"></td>
+                        <td><input type="number" step="0.01" class="inline-edit-input" id="editPrice_${it.product_id}" value="${it.unit_price}"></td>
+                        <td><input type="number" class="inline-edit-input" id="editReorder_${it.product_id}" value="${it.reorder_level}"></td>
+                        <td>
+                            <select class="inline-edit-input" id="editSupplier_${it.product_id}">
+                                ${supplierOptions}
+                            </select>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="action-btn-group" style="justify-content: flex-end;">
+                                <button type="button" class="btn-icon-action btn-icon-save" onclick="saveInlineEdit(${it.product_id})" title="Save Edit">✓</button>
+                                <button type="button" class="btn-icon-action btn-icon-delete" onclick="cancelInlineEdit()" title="Cancel">✕</button>
+                            </div>
+                        </td>
+                    `;
+                } else {
+                    // Standard Row Mode
+                    const isLow = it.quantity <= it.reorder_level;
+                    const isOut = it.quantity === 0;
+                    const stockColor = isOut ? "#ef4444" : (isLow ? "#f59e0b" : "#10b981");
+                    const lowBadge = isLow ? `<span style="display:inline-block; font-size:10.5px; padding:2px 6px; border-radius:4px; background:rgba(239,68,68,0.12); color:#dc2626; font-weight:700; margin-left:6px;">Low Stock</span>` : "";
+
+                    tr.innerHTML = `
+                        <td><strong>${it.name}</strong>${lowBadge}</td>
+                        <td><span class="sku-tag">${it.sku}</span></td>
+                        <td><span class="category-badge">${it.category}</span></td>
+                        <td><strong style="color: ${stockColor}">${it.quantity}</strong></td>
+                        <td><span class="price-tag">₹${parseFloat(it.unit_price || 0).toFixed(2)}</span></td>
+                        <td><span class="reorder-tag">${it.reorder_level}</span></td>
+                        <td><span class="sup-tag">${suppliersMap[it.supplier_id] || ('SUP-' + it.supplier_id)}</span></td>
+                        <td style="text-align: right;">
+                            <div class="action-btn-group" style="justify-content: flex-end;">
+                                <button type="button" class="btn-icon-action btn-icon-sale" onclick="openSaleModal(${it.product_id})" title="Sell Product">🛒</button>
+                                <button type="button" class="btn-icon-action btn-icon-edit" onclick="startInlineEdit(${it.product_id})" title="Edit Item">✏️</button>
+                                <button type="button" class="btn-icon-action btn-icon-delete" onclick="deleteItem(${it.product_id})" title="Delete Item">🗑️</button>
+                            </div>
+                        </td>
+                    `;
+                }
                 tbody.appendChild(tr);
             });
         }
 
-        // ── Load products ──
-        let lastQueryParams = {};
-        let loadSeq = 0;
-
-        async function loadProducts(params = null, opts = {}) {
-            const silent = opts.silent === true;
-            if (!silent) lastQueryParams = params || {};
-            params = lastQueryParams;
-            const seq = ++loadSeq;
-
-            const status = document.getElementById("tableStatus");
-            if (!silent) {
-                status.textContent = "Loading..."; status.style.display = "block";
-                document.getElementById("inventoryTableBody").innerHTML = "";
-            }
-
-            const qs = new URLSearchParams();
-            if (params.category) qs.set("category", params.category);
-            if (params.supplier_id) qs.set("supplier_id", params.supplier_id);
-            if (params.low_stock_only) qs.set("low_stock_only", "true");
-            if (params.min_price) qs.set("min_price", params.min_price);
-            if (params.max_price) qs.set("max_price", params.max_price);
-            if (params.search_term) qs.set("search_term", params.search_term);
-
-            const url = "/api/products" + (qs.toString() ? "?" + qs.toString() : "");
-            try {
-                const res = await apiGet(url);
-                if (res.status === 403) {
-                    if (!silent) status.textContent = "You do not have VIEW permission.";
-                    return;
-                }
-                if (!res.ok) {
-                    const d = await res.json().catch(() => ({}));
-                    if (!silent) status.textContent = d.description || "An unexpected error occurred.";
-                    return;
-                }
-                const data = await res.json();
-                if (seq !== loadSeq) return;
-                loadedProducts = data;
-                renderTable(data);
-            } catch {
-                if (!silent) {
-                    status.textContent = "Network error.";
-                    status.style.display = "block";
-                }
-            }
-        }
-
-        // ── Keep every open window in sync with the server's stock levels ──
-        setInterval(() => {
-            if (!document.hidden) loadProducts(null, { silent: true });
-        }, 5000);
-
-        document.addEventListener("visibilitychange", () => {
-            if (!document.hidden) loadProducts(null, { silent: true });
-        });
-
-        // Sales run through the async job queue, so re-poll until the worker's
-        // write lands instead of guessing a fixed delay.
-        async function refreshUntilSold(productId, quantityBefore, timeoutMs = 7000) {
-            const deadline = Date.now() + timeoutMs;
-            while (Date.now() < deadline) {
-                await new Promise((resolve) => setTimeout(resolve, 700));
-                await loadProducts(null, { silent: true });
-                const now = loadedProducts.find((p) => p.product_id === productId)?.quantity;
-                if (now !== undefined && quantityBefore !== undefined && now !== quantityBefore) return;
-            }
-            const finalQty = loadedProducts.find((p) => p.product_id === productId)?.quantity;
-            if (finalQty !== undefined && quantityBefore !== undefined && finalQty === quantityBefore) {
-                showToast("Note: Stock quantity unchanged. Transaction was not completed.");
-            }
-        }
-
-        // ── Filter logic ──
-        document.getElementById("applyFiltersBtn").addEventListener("click", () => {
-            const errEl = document.getElementById("filterError");
-            errEl.textContent = ""; errEl.className = "message";
-
-            const minP = document.getElementById("filterMinPrice").value;
-            const maxP = document.getElementById("filterMaxPrice").value;
-
-            if (minP && (isNaN(minP) || parseFloat(minP) < 0)) { errEl.textContent = "Min price must be a non-negative number."; errEl.className = "message error"; return; }
-            if (maxP && (isNaN(maxP) || parseFloat(maxP) < 0)) { errEl.textContent = "Max price must be a non-negative number."; errEl.className = "message error"; return; }
-            if (minP && maxP && parseFloat(minP) > parseFloat(maxP)) { errEl.textContent = "Min price cannot exceed max price."; errEl.className = "message error"; return; }
-
-            loadProducts({
-                category: document.getElementById("filterCategory").value.trim(),
-                supplier_id: document.getElementById("filterSupplier").value.trim(),
-                low_stock_only: document.getElementById("filterLowStock").checked,
-                min_price: minP,
-                max_price: maxP,
-                search_term: document.getElementById("filterSearch").value.trim()
-            });
-        });
-
-        document.getElementById("clearFiltersBtn").addEventListener("click", () => {
-            document.getElementById("filterSearch").value = "";
-            document.getElementById("filterCategory").value = "";
-            document.getElementById("filterSupplier").value = "";
-            document.getElementById("filterMinPrice").value = "";
-            document.getElementById("filterMaxPrice").value = "";
-            document.getElementById("filterLowStock").checked = false;
-            document.getElementById("filterError").textContent = "";
-            loadProducts();
-        });
-
-        // ── Add / Edit Product Modal ──
+        // 5. Add Product Modal Logic
         const addProductModal = document.getElementById("addProductModal");
-        const productFormError = document.getElementById("productFormError");
-        const saveProductBtn = document.getElementById("saveProductBtn");
+        const openAddProductModalBtn = document.getElementById("openAddProductModalBtn");
+        const closeAddProductModalBtn = document.getElementById("closeAddProductModalBtn");
+        const cancelModalBtn = document.getElementById("cancelModalBtn");
 
-        function openProductModal() {
-            productFormError.textContent = "";
-            document.getElementById("addProductModalTitle").textContent =
-                editingProductId === null ? "+ Add New Product Record" : "✎ Edit Product Record";
-            addProductModal.classList.add("active"); addProductModal.setAttribute("aria-hidden","false");
+        function openModal() {
+            addProductModal.classList.add("active");
+            addProductModal.setAttribute("aria-hidden", "false");
         }
 
-        document.getElementById("openAddProductModalBtn").addEventListener("click", () => {
-            editingProductId = null;
+        function closeModal() {
+            addProductModal.classList.remove("active");
+            addProductModal.setAttribute("aria-hidden", "true");
             document.getElementById("itemEntryForm").reset();
-            openProductModal();
+        }
+
+        openAddProductModalBtn.addEventListener("click", openModal);
+        closeAddProductModalBtn.addEventListener("click", closeModal);
+        cancelModalBtn.addEventListener("click", closeModal);
+
+        addProductModal.addEventListener("click", (e) => {
+            if (e.target === addProductModal) closeModal();
         });
-        document.getElementById("closeAddProductModalBtn").addEventListener("click", closeAddModal);
-        document.getElementById("cancelModalBtn").addEventListener("click", closeAddModal);
-        addProductModal.addEventListener("click", (e) => { if (e.target === addProductModal) closeAddModal(); });
 
-        function closeAddModal() {
-            addProductModal.classList.remove("active"); addProductModal.setAttribute("aria-hidden","true");
-            document.getElementById("itemEntryForm").reset();
-            productFormError.textContent = "";
-            editingProductId = null;
-        }
-
-        function readProductForm() {
-            return {
-                name: document.getElementById("inputItemName").value.trim(),
-                sku: document.getElementById("inputSKU").value.trim(),
-                category: document.getElementById("inputCategory").value.trim(),
-                quantity: parseInt(document.getElementById("inputQty").value, 10),
-                unit_price: document.getElementById("inputPrice").value.trim(),
-                reorder_level: parseInt(document.getElementById("inputReorder").value, 10),
-                supplier_id: parseInt(document.getElementById("inputSupplier").value, 10)
-            };
-        }
-
-        function openEditModal(productId) {
-            const p = loadedProducts.find(x => x.product_id === productId);
-            if (!p) return;
-            editingProductId = productId;
-            document.getElementById("inputItemName").value = p.name;
-            document.getElementById("inputSKU").value = p.sku;
-            document.getElementById("inputCategory").value = p.category;
-            document.getElementById("inputQty").value = p.quantity;
-            document.getElementById("inputPrice").value = p.unit_price;
-            document.getElementById("inputReorder").value = p.reorder_level;
-            document.getElementById("inputSupplier").value = p.supplier_id;
-            openProductModal();
-        }
-
-        async function errorDescription(res, fallback) {
-            const d = await res.json().catch(() => ({}));
-            return d.description || fallback;
-        }
-
+        // 6. Submit New Product (POST /api/products)
         document.getElementById("itemEntryForm").addEventListener("submit", async (e) => {
             e.preventDefault();
-            const isEdit = editingProductId !== null;
-            const body = readProductForm();
-            productFormError.textContent = "";
+            const name = document.getElementById("inputItemName").value.trim();
+            const sku = document.getElementById("inputSKU").value.trim().toUpperCase();
+            const category = document.getElementById("inputCategory").value.trim();
+            const quantity = parseInt(document.getElementById("inputQty").value) || 0;
+            const unit_price = parseFloat(document.getElementById("inputPrice").value) || 0;
+            const reorder_level = parseInt(document.getElementById("inputReorder").value) || 0;
+            const supplier_id = parseInt(document.getElementById("inputSupplier").value);
 
-            saveProductBtn.disabled = true;
-            try {
-                const res = await fetch(isEdit ? "/api/products/" + editingProductId : "/api/products", {
-                    method: isEdit ? "PUT" : "POST",
-                    headers: authHeader(),
-                    body: JSON.stringify(body)
-                });
-                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return; }
-                if (res.status === 409) { productFormError.textContent = "A product with this SKU already exists."; return; }
-                if (res.status === 404) { productFormError.textContent = "Product not found. It may have been deleted."; loadProducts(); return; }
-                if (!res.ok) { productFormError.textContent = await errorDescription(res, "Could not save this product. Please check the values."); return; }
-
-                showToast(isEdit ? "Record updated successfully!" : "New product record saved!");
-                closeAddModal();
-                loadProducts();
-            } catch {
-                productFormError.textContent = "Could not reach the server. Please try again.";
-            } finally {
-                saveProductBtn.disabled = false;
-            }
-        });
-
-        // ── Delete Product ──
-        async function deleteProduct(productId) {
-            const p = loadedProducts.find(x => x.product_id === productId);
-            if (!confirm("Are you sure you want to delete \"" + (p ? p.name : "this product") + "\"?")) return;
-
-            try {
-                const res = await fetch("/api/products/" + productId, { method: "DELETE", headers: authHeader() });
-                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return; }
-                if (res.status === 403) { showToast("You do not have permission to delete products."); return; }
-                if (res.status === 404) { showToast("Product not found. It may have already been deleted."); loadProducts(); return; }
-                if (!res.ok) { showToast(await errorDescription(res, "Could not delete this product.")); return; }
-                showToast("Item deleted from inventory!");
-                loadProducts();
-            } catch {
-                showToast("Could not reach the server. Please try again.");
-            }
-        }
-
-        // ── Sale Modal ──
-        const saleModal = document.getElementById("saleModal");
-        document.getElementById("closeSaleModalBtn").addEventListener("click", closeSaleModal);
-        document.getElementById("cancelSaleModalBtn").addEventListener("click", closeSaleModal);
-        saleModal.addEventListener("click", (e) => { if (e.target === saleModal) closeSaleModal(); });
-
-        function openSaleModal(productId) {
-            const prod = loadedProducts.find((p) => p.product_id === productId);
-            document.getElementById("saleProductId").value = productId;
-            document.getElementById("saleQty").value = "";
-            document.getElementById("saleCustomerRef").value = "";
-            document.getElementById("saleMessage").textContent = "";
-            const stockInfo = document.getElementById("saleStockInfo");
-            if (stockInfo) {
-                stockInfo.textContent = prod ? `Product: ${prod.name} | Available Stock: ${prod.quantity}` : "";
-            }
-            if (prod) {
-                document.getElementById("saleQty").max = prod.quantity;
-            }
-            saleModal.classList.add("active"); saleModal.setAttribute("aria-hidden","false");
-        }
-
-        function closeSaleModal() {
-            saleModal.classList.remove("active"); saleModal.setAttribute("aria-hidden","true");
-        }
-
-        document.getElementById("saleForm").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const msgEl = document.getElementById("saleMessage");
-            const btn = document.getElementById("saleSaveBtn");
-            const productId = parseInt(document.getElementById("saleProductId").value);
-            const quantity = parseInt(document.getElementById("saleQty").value);
-            const customerRef = document.getElementById("saleCustomerRef").value.trim();
-
-            if (!Number.isInteger(productId) || productId < 1) { msgEl.textContent = "Invalid product ID."; msgEl.className = "message error"; return; }
-            if (!Number.isInteger(quantity) || quantity < 1) { msgEl.textContent = "Quantity must be a positive integer."; msgEl.className = "message error"; return; }
-
-            const prod = loadedProducts.find((p) => p.product_id === productId);
-            if (prod && quantity > prod.quantity) {
-                const errMsg = `Insufficient stock. Only ${prod.quantity} items available.`;
-                msgEl.textContent = errMsg;
-                msgEl.className = "message error";
-                showToast(errMsg);
+            if (!supplier_id) {
+                showToast("Please choose a supplier.", true);
                 return;
             }
 
-            btn.disabled = true;
-            const stockBefore = prod?.quantity;
             try {
-                const res = await fetch("/api/sales", {
+                const res = await fetch("/api/products", {
                     method: "POST",
-                    headers: authHeader(),
-                    body: JSON.stringify({ product_id: productId, quantity, customer_ref: customerRef })
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        name,
+                        sku,
+                        category,
+                        quantity,
+                        unit_price: unit_price.toFixed(2),
+                        reorder_level,
+                        supplier_id
+                    })
                 });
 
-                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return; }
-
-                const data = await res.json().catch(() => ({}));
-
-                if (res.status === 202) {
-                    msgEl.textContent = `Sale queued! Job ID: ${data.job_id} — Status: ${data.status}`;
-                    msgEl.className = "message success";
-                    showToast("Sale submitted successfully!");
-                    closeSaleModal();
-                    refreshUntilSold(productId, stockBefore);
-                } else if (res.status === 403) {
-                    msgEl.textContent = "You do not have APPEND permission."; msgEl.className = "message error";
-                    showToast("You do not have permission to record sales.");
-                } else if (res.status === 404) {
-                    msgEl.textContent = "Product not found."; msgEl.className = "message error";
-                    showToast("Product not found.");
-                } else {
-                    const errMsg = data.description || "An unexpected error occurred.";
-                    msgEl.textContent = errMsg;
-                    msgEl.className = "message error";
-                    showToast(errMsg);
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.description || data.error || "Failed to add product.", true);
+                    return;
                 }
-            } catch {
-                msgEl.textContent = "Network error."; msgEl.className = "message error";
-                showToast("Network error. Please try again.");
-            } finally {
-                btn.disabled = false;
+
+                closeModal();
+                showToast("New product record saved!");
+                await loadProducts();
+            } catch (err) {
+                showToast("Connection error creating product.", true);
             }
         });
 
-        // ── Logout ──
-        document.getElementById("logoutBtn").addEventListener("click", async () => {
-            const t = sessionStorage.getItem("session_token");
-            if (t) { try { await fetch("/api/auth/logout", { method:"POST", headers: authHeader() }); } catch {} }
+        // 7. Inline Edit Operations (PUT /api/products/<id>)
+        function startInlineEdit(id) {
+            editingRowId = id;
+            renderTable();
+        }
+
+        function cancelInlineEdit() {
+            editingRowId = null;
+            renderTable();
+        }
+
+        async function saveInlineEdit(productId) {
+            const newName = document.getElementById(`editName_${productId}`).value.trim();
+            const newSKU = document.getElementById(`editSKU_${productId}`).value.trim().toUpperCase();
+            const newCat = document.getElementById(`editCategory_${productId}`).value.trim();
+            const newQty = parseInt(document.getElementById(`editQty_${productId}`).value) || 0;
+            const newPrice = parseFloat(document.getElementById(`editPrice_${productId}`).value) || 0;
+            const newReorder = parseInt(document.getElementById(`editReorder_${productId}`).value) || 0;
+            const newSupplier = parseInt(document.getElementById(`editSupplier_${productId}`).value);
+
+            if (!newName || !newSKU) {
+                showToast("Item Name and SKU cannot be empty!", true);
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/products/${productId}`, {
+                    method: "PUT",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        name: newName,
+                        sku: newSKU,
+                        category: newCat || "General",
+                        quantity: newQty,
+                        unit_price: newPrice.toFixed(2),
+                        reorder_level: newReorder,
+                        supplier_id: newSupplier
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.description || data.error || "Failed to update record.", true);
+                    return;
+                }
+
+                editingRowId = null;
+                showToast("Record updated successfully!");
+                await loadProducts();
+            } catch (err) {
+                showToast("Connection error saving product edit.", true);
+            }
+        }
+
+        // 8. Delete Item Operation (DELETE /api/products/<id>)
+        async function deleteItem(productId) {
+            if (!confirm("Are you sure you want to delete this product record?")) return;
+
+            try {
+                const res = await fetch(`/api/products/${productId}`, {
+                    method: "DELETE",
+                    headers: getAuthHeaders()
+                });
+
+                if (!res.ok && res.status !== 204) {
+                    const data = await res.json();
+                    showToast(data.description || data.error || "Failed to delete item.", true);
+                    return;
+                }
+
+                showToast("Item deleted from inventory!");
+                await loadProducts();
+            } catch (err) {
+                showToast("Connection error deleting product.", true);
+            }
+        }
+
+        // 9. Record Sale Modal Operations (POST /api/sales)
+        const recordSaleModal = document.getElementById("recordSaleModal");
+        const closeSaleModalBtn = document.getElementById("closeSaleModalBtn");
+        const cancelSaleModalBtn = document.getElementById("cancelSaleModalBtn");
+
+        function openSaleModal(productId) {
+            const product = products.find(p => p.product_id === productId);
+            if (!product) return;
+
+            document.getElementById("saleProductId").value = product.product_id;
+            document.getElementById("saleProductName").value = product.name;
+            document.getElementById("saleCurrentStock").value = `${product.quantity} units available`;
+            document.getElementById("saleQuantity").value = 1;
+            document.getElementById("saleQuantity").max = product.quantity;
+            document.getElementById("saleCustomerRef").value = "";
+
+            recordSaleModal.classList.add("active");
+            recordSaleModal.setAttribute("aria-hidden", "false");
+        }
+
+        function closeSaleModal() {
+            recordSaleModal.classList.remove("active");
+            recordSaleModal.setAttribute("aria-hidden", "true");
+            document.getElementById("saleEntryForm").reset();
+        }
+
+        closeSaleModalBtn.addEventListener("click", closeSaleModal);
+        cancelSaleModalBtn.addEventListener("click", closeSaleModal);
+
+        recordSaleModal.addEventListener("click", (e) => {
+            if (e.target === recordSaleModal) closeSaleModal();
+        });
+
+        document.getElementById("saleEntryForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const productId = parseInt(document.getElementById("saleProductId").value);
+            const quantity = parseInt(document.getElementById("saleQuantity").value);
+            const customerRef = document.getElementById("saleCustomerRef").value.trim();
+
+            if (!productId || quantity < 1) {
+                showToast("Please enter a valid sale quantity.", true);
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/sales", {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        product_id: productId,
+                        quantity: quantity,
+                        customer_ref: customerRef
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.description || data.error || "Sale rejected.", true);
+                    return;
+                }
+
+                closeSaleModal();
+                showToast("Sale processed successfully! Stock updated.");
+                setTimeout(() => { loadProducts(); }, 400);
+            } catch (err) {
+                showToast("Connection error processing sale.", true);
+            }
+        });
+
+        // 10. Search Input & Auth Guard
+        document.getElementById("tableSearchInput").addEventListener("input", renderTable);
+
+        // Enforce Session Authentication
+        (async function initAuth() {
+            const token = localStorage.getItem("smobhar_session_token");
+            if (!token) {
+                window.location.href = "{{ url_for('login') }}";
+                return;
+            }
+            try {
+                const res = await fetch("/api/auth/me", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                if (!res.ok) {
+                    localStorage.removeItem("smobhar_session_token");
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+                const user = await res.json();
+                if (user.role_id === 1) {
+                    const adminLink = document.getElementById("navAdminLink");
+                    if (adminLink) adminLink.style.display = "inline-flex";
+                }
+            } catch (err) {}
+        })();
+
+        document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem("smobhar_session_token");
+            try {
+                await fetch("/api/auth/logout", {
+                    method: "POST",
+                    headers: token ? { "Authorization": "Bearer " + token } : {}
+                });
+            } catch (err) {}
+            localStorage.removeItem("smobhar_session_token");
             sessionStorage.clear();
             window.location.href = "{{ url_for('login') }}";
         });
 
-        // ── Suppliers (populates the Add/Edit modal dropdown) ──
-        async function loadSuppliers() {
-            const sel = document.getElementById("inputSupplier");
-            const placeholder = document.createElement("option");
-            try {
-                const res = await apiGet("/api/suppliers");
-                if (!res.ok) { placeholder.textContent = "Supplier list unavailable"; sel.innerHTML = ""; sel.appendChild(placeholder); return; }
-                const list = await res.json();
-                sel.innerHTML = "";
-                placeholder.value = "";
-                placeholder.textContent = "Select a supplier…";
-                sel.appendChild(placeholder);
-                list.forEach(s => {
-                    const opt = document.createElement("option");
-                    opt.value = s.supplier_id;
-                    opt.textContent = `${s.supplier_id} · ${s.name}`;
-                    sel.appendChild(opt);
-                });
-            } catch {
-                placeholder.textContent = "Supplier list unavailable";
-                sel.innerHTML = "";
-                sel.appendChild(placeholder);
-            }
-        }
-
-        // Initial load
-        async function loadPermissions() {
-            try {
-                const res = await apiGet("/api/auth/me");
-                if (!res.ok) return;
-                const me = await res.json();
-                permissions = new Set(me.permissions || []);
-            } catch {
-                permissions = new Set();
-            }
-            document.getElementById("openAddProductModalBtn").style.display =
-                can("APPEND") ? "" : "none";
-            const adminLink = document.getElementById("navAdminLink");
-            if (adminLink) {
-                adminLink.style.display = can("ADMIN") ? "inline-flex" : "none";
-            }
-        }
-
-        (async () => {
-            await loadPermissions();
-            loadSuppliers();
-            loadProducts();
-        })();
+        // Initial Load
+        loadSuppliers();
+        loadProducts();
     </script>
 </body>
 </html>

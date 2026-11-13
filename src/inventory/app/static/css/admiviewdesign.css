@@ -24,10 +24,6 @@
     /* Role Badges */
     --role-admin-bg: #fee2e2;
     --role-admin-text: #b91c1c;
-    --role-manager-bg: #e0f2fe;
-    --role-manager-text: #0369a1;
-    --role-supervisor-bg: #dcfce7;
-    --role-supervisor-text: #15803d;
 
     /* Status Accents */
     --status-active-bg: #ecfdf5;
@@ -124,12 +120,6 @@ body {
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 999px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-    animation: navDrop 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes navDrop {
-    from { opacity: 0; transform: translateY(-16px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 .nav-brand {
@@ -199,35 +189,9 @@ body {
     transition: color 0.2s ease;
 }
 
-.nav-links a::after,
-.nav-link-btn::after {
-    content: "";
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: var(--primary-red);
-    border-radius: 2px;
-    transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
 .nav-links a:hover,
 .nav-link-btn:hover {
     color: var(--primary-red);
-}
-
-.nav-links a:hover::after,
-.nav-link-btn:hover::after {
-    width: 100%;
-}
-
-.nav-link-btn.highlighted {
-    color: var(--primary-red) !important;
-}
-
-.nav-link-btn.highlighted::after {
-    width: 100% !important;
 }
 
 .admin-tag {
@@ -271,7 +235,7 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 40px 24px 60px;
+    padding: 40px 24px 80px;
     position: relative;
     z-index: 10;
 }
@@ -294,7 +258,6 @@ body {
     letter-spacing: 1.5px;
     text-transform: uppercase;
     margin-bottom: 24px;
-    animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .stage-pill-dot {
@@ -313,7 +276,6 @@ body {
     color: var(--text-dark);
     max-width: 900px;
     margin-bottom: 20px;
-    animation: fadeInUp 0.9s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .stage-title span {
@@ -328,16 +290,14 @@ body {
     color: var(--text-muted);
     max-width: 640px;
     margin: 0 auto 36px;
-    animation: fadeInUp 0.9s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .admin-action-row {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 20px;
     flex-wrap: wrap;
-    justify-content: center;
-    animation: fadeInUp 0.9s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .btn-aura-wrapper {
@@ -352,7 +312,6 @@ body {
     border: 1.5px dashed rgba(0, 0, 0, 0.18);
     pointer-events: none;
     animation: rotateRing 20s linear infinite;
-    transition: border-color 0.3s ease;
 }
 
 @keyframes rotateRing {
@@ -374,7 +333,7 @@ body {
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+    transition: all 0.25s ease;
 }
 
 .btn-add-user {
@@ -387,10 +346,6 @@ body {
     background: var(--primary-red);
     transform: translateY(-3px) scale(1.02);
     box-shadow: 0 16px 40px var(--primary-red-glow);
-}
-
-.btn-aura-wrapper:hover .action-ring-red {
-    border-color: var(--primary-red);
 }
 
 .btn-move-workplace {
@@ -407,12 +362,8 @@ body {
     box-shadow: 0 16px 40px var(--primary-blue-glow);
 }
 
-.btn-aura-wrapper:hover .action-ring-blue {
-    border-color: var(--primary-blue);
-}
-
-.btn-move-workplace .move-table-arrow {
-    font-size: 17px;
+.move-table-arrow {
+    margin-left: 8px;
     transition: transform 0.25s ease;
 }
 
@@ -420,18 +371,65 @@ body {
     transform: translateX(4px);
 }
 
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to { opacity: 1; transform: translateY(0); }
+/* ==========================================================================
+   RIGHT-BOTTOM FLOATING QUICK ACTION PANEL
+   ========================================================================== */
+.floating-bottom-right-panel {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 90;
+    display: flex;
+    gap: 12px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s;
 }
 
-@keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-16px); }
-    to { opacity: 1; transform: translateY(0); }
+.floating-bottom-right-panel.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(30px);
+}
+
+.floating-action-btn {
+    padding: 10px 20px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--text-dark);
+    border: 1.5px solid var(--border-light);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
+}
+
+.floating-action-btn:hover {
+    background: #0d0e12;
+    color: #ffffff;
+    border-color: #0d0e12;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.floating-action-btn.highlight {
+    background: #ea2330;
+    color: #ffffff;
+    border-color: #ea2330;
+    box-shadow: 0 0 15px rgba(234, 35, 48, 0.5);
+}
+
+.floating-action-btn.highlight:hover {
+    background: #d31a26;
 }
 
 /* ==========================================================================
-   5. VIEW USERS DIRECTORY SECTION (PROMINENT RIGHT-ALIGNED BACK BUTTON)
+   5. TABLES & DIRECTORY SECTIONS
    ========================================================================== */
 .table-section {
     display: none;
@@ -445,15 +443,8 @@ body {
 .table-section.active {
     display: flex;
     flex-direction: column;
-    animation: tableReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes tableReveal {
-    from { opacity: 0; transform: translateY(30px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Right-aligned clean Back button bar */
 .top-navigation-bar {
     display: flex;
     align-items: center;
@@ -473,10 +464,9 @@ body {
     font-family: 'Cinzel', serif;
     font-size: 14px;
     font-weight: 800;
-    letter-spacing: 0.8px;
     cursor: pointer;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.25s ease;
 }
 
 .btn-back-pill-prominent:hover {
@@ -484,13 +474,11 @@ body {
     color: #ffffff;
     border-color: #0d0e12;
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .table-glass-card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 32px;
     padding: 42px 46px;
@@ -510,7 +498,6 @@ body {
 .table-header-left h3 {
     font-size: 26px;
     font-weight: 900;
-    letter-spacing: -0.5px;
     color: var(--text-dark);
 }
 
@@ -536,47 +523,8 @@ body {
     font-size: 13.5px;
     outline: none;
     background: #ffffff;
-    transition: all 0.2s ease;
 }
 
-.table-search-input:focus {
-    border-color: var(--primary-red);
-    box-shadow: 0 0 0 3px rgba(234, 35, 48, 0.12);
-}
-
-.role-filter-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #f1f5f9;
-    padding: 4px;
-    border-radius: 14px;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.role-filter-btn {
-    border: none;
-    background: transparent;
-    padding: 8px 14px;
-    border-radius: 10px;
-    font-size: 12.5px;
-    font-weight: 700;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.role-filter-btn:hover {
-    color: var(--text-dark);
-}
-
-.role-filter-btn.active {
-    background: #ffffff;
-    color: var(--primary-red);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-/* User Card Rows */
 .user-cards-grid {
     display: flex;
     flex-direction: column;
@@ -593,30 +541,16 @@ body {
     border: 1.5px solid rgba(0, 0, 0, 0.05);
     border-radius: 20px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.015);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.user-row-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
-    border-color: rgba(234, 35, 48, 0.2);
 }
 
 .grid-header {
     background: #f8fafc;
     border: none;
-    box-shadow: none;
     padding: 14px 22px;
     font-size: 12px;
     font-weight: 800;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-}
-
-.grid-header:hover {
-    transform: none;
-    box-shadow: none;
 }
 
 .user-meta-cell {
@@ -635,7 +569,6 @@ body {
     font-size: 16px;
     display: grid;
     place-items: center;
-    flex-shrink: 0;
 }
 
 .user-name-title {
@@ -665,13 +598,10 @@ body {
     font-size: 11.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
     width: fit-content;
 }
 
 .role-admin { background: var(--role-admin-bg); color: var(--role-admin-text); }
-.role-manager { background: var(--role-manager-bg); color: var(--role-manager-text); }
-.role-supervisor { background: var(--role-supervisor-bg); color: var(--role-supervisor-text); }
 
 .status-pill-btn {
     border: 1px solid transparent;
@@ -683,8 +613,6 @@ body {
     gap: 6px;
     font-size: 12px;
     font-weight: 700;
-    width: fit-content;
-    transition: all 0.2s ease;
 }
 
 .status-pill-btn.active-status {
@@ -699,24 +627,14 @@ body {
     color: var(--status-inactive-text);
 }
 
-.status-pill-btn:hover {
-    transform: scale(1.04);
-}
-
 .status-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
 }
 
-.status-dot-active {
-    background: #10b981;
-    box-shadow: 0 0 8px #10b981;
-}
-
-.status-dot-inactive {
-    background: #94a3b8;
-}
+.status-dot-active { background: #10b981; }
+.status-dot-inactive { background: #94a3b8; }
 
 .action-btn-group {
     display: flex;
@@ -734,13 +652,6 @@ body {
     font-size: 12.5px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-view-usr:hover {
-    background: #0284c7;
-    color: #ffffff;
-    transform: translateY(-1px);
 }
 
 .btn-del-usr {
@@ -752,17 +663,10 @@ body {
     font-size: 12.5px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-del-usr:hover {
-    background: #dc2626;
-    color: #ffffff;
-    transform: translateY(-1px);
 }
 
 /* ==========================================================================
-   6. POPUP MODALS & SAVE BUTTON (EMERALD GREEN WITH SHINE)
+   6. MODALS & FOOTER
    ========================================================================== */
 .modal-overlay {
     position: fixed;
@@ -770,7 +674,6 @@ body {
     z-index: 100;
     background: rgba(15, 16, 20, 0.65);
     backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     display: none;
     align-items: center;
     justify-content: center;
@@ -779,12 +682,6 @@ body {
 
 .modal-overlay.active {
     display: flex;
-    animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes modalIn {
-    from { opacity: 0; transform: scale(0.95) translateY(18px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .modal-card {
@@ -810,26 +707,15 @@ body {
 .modal-header h3 {
     font-size: 20px;
     font-weight: 800;
-    color: var(--text-dark);
 }
 
 .modal-close-btn {
     border: none;
     background: #f3f4f6;
-    color: var(--text-muted);
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    font-size: 18px;
     cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: all 0.2s;
-}
-
-.modal-close-btn:hover {
-    background: #fee2e2;
-    color: var(--primary-red);
 }
 
 .modal-body {
@@ -838,18 +724,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 18px;
-    flex: 1 1 auto;
-    min-height: 0;
-}
-
-/* The form sits between .modal-card and .modal-body, so it must pass the
-   flex height down or tall forms spill past the card's overflow:hidden
-   and the footer buttons become unclickable. */
-.modal-card > form {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
 }
 
 .form-field {
@@ -858,39 +732,9 @@ body {
     gap: 6px;
 }
 
-.field-label-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.field-label-row label {
+.form-field label {
     font-size: 12.5px;
     font-weight: 700;
-    color: var(--text-dark);
-}
-
-.badge-optional {
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
-    background: #f1f5f9;
-    padding: 2px 8px;
-    border-radius: 6px;
-}
-
-.field-current-value {
-    font-size: 12px;
-    color: #475569;
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 4px;
-}
-
-.field-current-value strong {
-    color: var(--text-dark);
 }
 
 .field-input-box {
@@ -899,22 +743,20 @@ body {
     padding: 0 16px;
     border-radius: 10px;
     border: 1.5px solid var(--border-light);
-    background: #ffffff;
-    color: var(--text-dark);
     font-size: 14px;
     outline: none;
-    transition: all 0.2s ease;
 }
 
-.field-input-box:focus {
-    border-color: var(--primary-red);
-    box-shadow: 0 0 0 3px rgba(234, 35, 48, 0.12);
-}
-
+/* Password Eye Wrapper Fix */
 .password-input-wrap {
     position: relative;
     display: flex;
     align-items: center;
+}
+
+.password-input-wrap input {
+    width: 100%;
+    padding-right: 48px;
 }
 
 .toggle-eye {
@@ -922,65 +764,9 @@ body {
     right: 14px;
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    cursor: pointer;
     font-size: 16px;
-    cursor: pointer;
-}
-
-.role-cards-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-top: 4px;
-}
-
-.role-choice-card {
-    border: 1.5px solid var(--border-light);
-    background: #f8fafc;
-    border-radius: 14px;
-    padding: 12px 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-    user-select: none;
-}
-
-.role-choice-card:hover {
-    transform: translateY(-2px);
-    border-color: #cbd5e1;
-}
-
-.role-choice-title {
-    font-size: 13px;
-    font-weight: 800;
-    display: block;
-    margin-bottom: 2px;
-}
-
-.role-choice-desc {
-    font-size: 10px;
     color: var(--text-muted);
-}
-
-.role-choice-card.selected-admin {
-    border-color: var(--primary-red);
-    background: #fef2f2;
-    color: var(--primary-red);
-    box-shadow: 0 4px 14px rgba(234, 35, 48, 0.15);
-}
-
-.role-choice-card.selected-manager {
-    border-color: var(--primary-blue);
-    background: #f0f9ff;
-    color: var(--primary-blue);
-    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.15);
-}
-
-.role-choice-card.selected-supervisor {
-    border-color: #10b981;
-    background: #f0fdf4;
-    color: #15803d;
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15);
 }
 
 .modal-footer {
@@ -996,61 +782,42 @@ body {
     border-radius: 10px;
     border: 1.5px solid var(--border-light);
     background: transparent;
-    color: var(--text-muted);
-    font-size: 13.5px;
-    font-weight: 600;
     cursor: pointer;
 }
 
-.btn-modal-cancel:hover {
-    background: #f8fafc;
-    color: var(--text-dark);
-}
-
+/* Animated & Glowing "Create User" Button */
 .btn-modal-submit-red {
-    padding: 11px 26px;
-    border-radius: 10px;
+    padding: 12px 28px;
+    border-radius: 12px;
     border: none;
-    background: var(--primary-red);
+    background: linear-gradient(135deg, #ea2330 0%, #c51d28 100%);
     color: #ffffff;
-    font-size: 13.5px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(234, 35, 48, 0.25);
-    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 6px 20px rgba(234, 35, 48, 0.4);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .btn-modal-submit-red:hover {
-    background: var(--primary-red-hover);
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(234, 35, 48, 0.6);
+    background: linear-gradient(135deg, #f22e3c 0%, #d31a26 100%);
 }
 
-/* Save Detail: Emerald Green Button */
+.btn-modal-submit-red:active {
+    transform: translateY(0) scale(0.98);
+}
+
 .btn-modal-submit-green {
     padding: 12px 30px;
     border-radius: 10px;
     border: none;
     background: var(--primary-green);
     color: #ffffff;
-    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 14px;
     font-weight: 800;
     cursor: pointer;
-    box-shadow: 0 4px 18px var(--primary-green-glow);
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    transition: all 0.2s ease;
-}
-
-.btn-modal-submit-green:hover {
-    background: var(--primary-green-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.5);
-}
-
-.btn-modal-submit-green:active {
-    transform: translateY(0);
 }
 
 .btn-view-update-blue {
@@ -1062,38 +829,14 @@ body {
     font-size: 13.5px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 14px var(--primary-blue-glow);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: background 0.2s, transform 0.15s;
-}
-
-.btn-view-update-blue:hover {
-    background: var(--primary-blue-hover);
-    transform: translateY(-1px);
 }
 
 .detail-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
     padding: 12px 16px;
-    border-radius: 10px;
     background: #f8fafc;
-    border: 1px solid #edf0f5;
-}
-
-.detail-key {
-    font-size: 12.5px;
-    color: var(--text-muted);
-    font-weight: 700;
-}
-
-.detail-val {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text-dark);
+    border-radius: 10px;
 }
 
 .toast-notice {
@@ -1105,175 +848,13 @@ body {
     border-radius: 12px;
     background: #12141c;
     color: #ffffff;
-    font-size: 13.5px;
-    font-weight: 600;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
     display: none;
-    animation: toastPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-@keyframes toastPop {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ==========================================================================
-   7. EXACT BLACK FOOTER (STRICTLY BELOW THE FOLD - ONLY ON SCROLL)
-   ========================================================================== */
 .site-footer {
     width: 100%;
     background: var(--footer-bg);
     color: var(--footer-text);
-    padding: 70px clamp(24px, 6vw, 100px) 36px;
-    position: relative;
-    z-index: 10;
+    padding: 70px 60px 36px;
     margin-top: 140px;
-}
-
-.footer-top {
-    margin-bottom: 50px;
-}
-
-.footer-main-title {
-    font-size: clamp(34px, 4.5vw, 48px);
-    font-weight: 800;
-    color: #ffffff;
-    letter-spacing: -0.8px;
-    margin-bottom: 14px;
-}
-
-.footer-social-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    color: #b0b4be;
-    font-size: 18px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.footer-social-link:hover {
-    color: #ffffff;
-    transform: translateX(3px);
-}
-
-.insta-icon-box {
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-    color: #ffffff;
-    font-size: 15px;
-    box-shadow: 0 4px 12px rgba(220, 39, 67, 0.3);
-}
-
-.footer-divider {
-    width: 100%;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    margin-bottom: 46px;
-}
-
-.footer-columns {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 48px;
-    margin-bottom: 70px;
-}
-
-.footer-col h3 {
-    font-size: 15px;
-    font-weight: 700;
-    color: #ffffff;
-    margin-bottom: 22px;
-    letter-spacing: 0.2px;
-}
-
-.footer-col ul {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 13px;
-}
-
-.footer-col ul li a {
-    color: var(--footer-muted);
-    font-size: 13.5px;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.footer-col ul li a:hover {
-    color: #ffffff;
-}
-
-.footer-tagline {
-    margin-top: 18px;
-    font-size: 13px;
-    line-height: 1.6;
-    color: #6d7280;
-    max-width: 320px;
-}
-
-.footer-bottom-bar {
-    padding-top: 30px;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-}
-
-.footer-bottom-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 12.5px;
-    color: #6a6f7c;
-}
-
-.footer-brand-mini {
-    font-size: 15px;
-    font-weight: 800;
-    color: #e5e7eb;
-}
-
-.footer-bottom-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #b5b9c4;
-}
-
-@media (max-width: 900px) {
-    .nav-right-group {
-        gap: 14px;
-    }
-    .nav-links {
-        display: none;
-    }
-    .user-row-card {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-    .grid-header {
-        display: none;
-    }
-    .action-btn-group {
-        justify-content: flex-start;
-    }
-    .role-cards-container {
-        grid-template-columns: 1fr;
-    }
-    .footer-columns {
-        grid-template-columns: 1fr;
-        gap: 36px;
-    }
 }

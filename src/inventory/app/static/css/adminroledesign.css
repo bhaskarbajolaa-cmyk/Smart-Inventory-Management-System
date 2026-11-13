@@ -1,0 +1,562 @@
+/* ==========================================================================
+   1. FONTS IMPORT & CLEAN WHITE THEME VARIABLES
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Gotu&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+:root {
+    --primary-red: #ea2330;
+    --primary-red-hover: #d31a26;
+    --primary-red-glow: rgba(234, 35, 48, 0.35);
+
+    --primary-blue: #0284c7;
+    --primary-blue-hover: #0369a1;
+    --primary-blue-glow: rgba(2, 132, 199, 0.4);
+
+    --primary-green: #10b981;
+    --primary-green-hover: #059669;
+    --primary-green-glow: rgba(16, 185, 129, 0.4);
+    
+    --text-dark: #0d0e12;
+    --text-muted: #646875;
+    --border-light: rgba(0, 0, 0, 0.08);
+    --nav-glass: rgba(255, 255, 255, 0.85);
+
+    /* Role Badges */
+    --role-admin-bg: #fee2e2;
+    --role-admin-text: #b91c1c;
+    --role-custom-bg: #f3e8ff;
+    --role-custom-text: #7e22ce;
+
+    --priority-bg: #e0f2fe;
+    --priority-text: #0369a1;
+
+    --footer-bg: #0c0d11;
+    --footer-text: #ffffff;
+    --footer-muted: #8b8f9a;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    background-color: #ffffff;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    color: var(--text-dark);
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+/* ==========================================================================
+   2. WATER FLOW RIPPLE MASK LAYER
+   ========================================================================== */
+.cursor-pattern-layer {
+    position: fixed;
+    inset: -20px;
+    z-index: 0;
+    pointer-events: none;
+    background: url("../img/prodbg.png") center / cover no-repeat;
+    opacity: 0.85;
+    filter: url(#waterFilter);
+    -webkit-filter: url(#waterFilter);
+    -webkit-mask-image: radial-gradient(circle 320px at var(--mouse-x, -600px) var(--mouse-y, -600px), rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
+    mask-image: radial-gradient(circle 320px at var(--mouse-x, -600px) var(--mouse-y, -600px), rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
+    transition: opacity 0.3s ease;
+}
+
+.svg-filter-hidden {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   3. STICKY TOP NAVBAR
+   ========================================================================== */
+.navbar-wrap {
+    position: sticky;
+    top: 16px;
+    z-index: 50;
+    display: flex;
+    justify-content: center;
+    padding: 0 20px;
+}
+
+.navbar {
+    width: min(1140px, 100%);
+    padding: 12px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--nav-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 999px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+}
+
+.nav-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.brand-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    transition: transform 0.25s ease;
+}
+
+.nav-brand:hover .brand-logo {
+    transform: scale(1.08) rotate(-4deg);
+}
+
+.brand-name {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+}
+
+.font-smo {
+    font-family: 'Cinzel', serif;
+    font-size: 24px;
+    font-weight: 800;
+    color: #121214;
+}
+
+.font-bhar {
+    font-family: 'Gotu', sans-serif;
+    font-size: 22px;
+    color: var(--primary-red);
+}
+
+.nav-right-group {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.nav-links a,
+.nav-link-btn {
+    position: relative;
+    color: #4b5563;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+    color: var(--primary-red);
+}
+
+.admin-tag {
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(234, 35, 48, 0.08);
+    border: 1px solid rgba(234, 35, 48, 0.2);
+    color: var(--primary-red);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.logout-btn {
+    padding: 8px 20px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border-light);
+    background: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-red);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.logout-btn:hover {
+    background: #fee2e2;
+}
+
+/* ==========================================================================
+   4. LEDGER SECTION STYLING (With Gradient Title Effect)
+   ========================================================================== */
+.table-section {
+    display: flex;
+    flex-direction: column;
+    width: min(1200px, calc(100% - 40px));
+    margin: 30px auto 160px;
+    position: relative;
+    z-index: 10;
+}
+
+.top-header-wrapper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.page-main-title {
+    font-size: clamp(34px, 4.5vw, 44px);
+    font-weight: 900;
+    letter-spacing: -1.2px;
+    color: var(--text-dark);
+}
+
+/* Color Grading / Gradient for Management text */
+.page-main-title span {
+    background: linear-gradient(135deg, var(--text-dark) 40%, var(--primary-red) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.page-sub-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* Workspace Back Pill Button */
+.btn-workspace-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border-light);
+    background: #ffffff;
+    color: var(--text-dark);
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+}
+
+.btn-workspace-pill:hover {
+    background: #0d0e12;
+    color: #ffffff;
+    border-color: #0d0e12;
+    transform: translateY(-2px);
+}
+
+.table-glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 32px;
+    padding: 42px 46px;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.06);
+}
+
+.table-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.table-header-left h3 {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--text-dark);
+}
+
+.table-header-left p {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.table-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.table-search-input {
+    height: 44px;
+    width: 250px;
+    padding: 0 16px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border-light);
+    font-size: 13.5px;
+    outline: none;
+    background: #ffffff;
+}
+
+.btn-add-ledger {
+    padding: 11px 24px;
+    border-radius: 12px;
+    border: none;
+    background: var(--primary-red);
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px var(--primary-red-glow);
+    transition: all 0.2s ease;
+}
+
+.btn-add-ledger:hover {
+    background: var(--primary-red-hover);
+    transform: translateY(-2px);
+}
+
+.user-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.user-row-card {
+    display: grid;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 22px;
+    background: #ffffff;
+    border: 1.5px solid rgba(0, 0, 0, 0.05);
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.015);
+    transition: all 0.2s ease;
+}
+
+.user-row-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
+}
+
+.grid-header {
+    background: #f8fafc;
+    border: none;
+    padding: 14px 22px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.grid-header:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    width: fit-content;
+}
+
+.role-admin { background: var(--role-admin-bg); color: var(--role-admin-text); }
+
+.priority-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: var(--priority-bg);
+    color: var(--priority-text);
+    font-size: 12.5px;
+    font-weight: 800;
+    border: 1px solid #7dd3fc;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.15);
+}
+
+.action-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-icon-action {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-edit-icon {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+.btn-edit-icon:hover {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.btn-del-icon {
+    background: #fee2e2;
+    color: #dc2626;
+}
+.btn-del-icon:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   5. MODALS & FOOTER
+   ========================================================================== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(15, 16, 20, 0.65);
+    backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-card {
+    background: #ffffff;
+    width: min(560px, 100%);
+    max-height: 90vh;
+    border-radius: 28px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.modal-header {
+    padding: 22px 28px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-header h3 {
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.modal-close-btn {
+    border: none;
+    background: #f3f4f6;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 24px 28px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-field label {
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.field-input-box {
+    width: 100%;
+    height: 46px;
+    padding: 0 16px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-light);
+    font-size: 14px;
+    outline: none;
+}
+
+.modal-footer {
+    padding: 18px 28px 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.btn-modal-cancel {
+    padding: 11px 22px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-light);
+    background: transparent;
+    cursor: pointer;
+}
+
+.btn-modal-submit-green {
+    padding: 12px 30px;
+    border-radius: 10px;
+    border: none;
+    background: var(--primary-green);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.toast-notice {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 200;
+    padding: 14px 22px;
+    border-radius: 12px;
+    background: #12141c;
+    color: #ffffff;
+    display: none;
+}
+
+.site-footer {
+    width: 100%;
+    background: var(--footer-bg);
+    color: var(--footer-text);
+    padding: 70px 60px 36px;
+    margin-top: 140px;
+}

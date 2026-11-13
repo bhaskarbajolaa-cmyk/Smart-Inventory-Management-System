@@ -20,7 +20,17 @@
     --border-light: rgba(0, 0, 0, 0.08);
     --nav-glass: rgba(255, 255, 255, 0.85);
 
-    /* Category Badges */
+    .btn-icon-sale {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.btn-icon-sale:hover {
+    background: #fde68a;
+    transform: translateY(-1px);
+}
+
+/* Category Badges */
     --badge-bg: #e0f2fe;
     --badge-text: #0369a1;
 

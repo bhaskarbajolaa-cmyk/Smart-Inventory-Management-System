@@ -120,7 +120,9 @@ class RoleRepository(Repository[Role, object]):
         role = self.find_by_id(entity_id)
         if role is None:
             raise KeyError(f"Role {entity_id} does not exist.")
-        if role.is_system_default:
+        # Seeded built-in roles have created_by=0 and stay protected; roles an
+        # administrator explicitly marked as system remain deletable.
+        if role.is_system_default and role.created_by == 0:
             raise ValueError(f"System default role '{role.role_name}' cannot be deleted.")
 
         user_rows = self.db.execute_query(

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/smobhardesign.css') }}">
 </head>
 <body>
+    <!-- Hidden SVG Filter: Creates real-time liquid water displacement waves -->
     <svg class="svg-filter-hidden">
         <filter id="waterFilter">
             <feTurbulence id="waterTurbulence" type="fractalNoise" baseFrequency="0.015 0.015" numOctaves="3" result="noise" />
@@ -14,8 +15,10 @@
         </filter>
     </svg>
 
+    <!-- Cursor Interactive Circular Mask Layer (with water wave flow) -->
     <div class="cursor-pattern-layer" id="smokePattern"></div>
 
+    <!-- Top Sticky Navbar -->
     <div class="navbar-wrap">
         <header class="navbar">
             <a href="{{ url_for('workspace') }}" class="nav-brand">
@@ -24,16 +27,20 @@
                     <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
                 </span>
             </a>
+
+            <!-- Right-Side Group: Links + Logout Button -->
             <div class="nav-right-group">
                 <nav class="nav-links">
                     <a href="{{ url_for('about') }}">About us</a>
-                    <a href="{{ url_for('home') }}">Inventory Table</a>
+                    <a href="#actionTarget">Inventory Table</a>
                 </nav>
+
                 <button type="button" class="logout-btn" id="logoutBtn">Log out</button>
             </div>
         </header>
     </div>
 
+    <!-- Cardless Open Hero Stage -->
     <main class="stage-container">
         <div class="stage-pill">
             <span class="stage-pill-dot"></span>
@@ -49,25 +56,43 @@
             tailored strictly to the rhythm of your catalog.
         </p>
 
-        <div class="action-wrapper" id="actionTarget">
-            <a href="{{ url_for('home') }}" class="action-trigger" id="startBtn">
-                <span>START</span>
-                <span class="trigger-arrow">&rarr;</span>
-            </a>
-            <div class="action-ring"></div>
+        <!-- Action Buttons Group (Back Button on Left, START Button on Right) -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
+            
+            <!-- Back to Admin Button -->
+            <div class="action-wrapper">
+                <button type="button" class="action-trigger" onclick="window.location.href='{{ url_for('admin') }}'" style="background: #ffffff; color: var(--text-dark); border: 1.5px solid var(--border-light);">
+                    <span style="font-size: 18px;">←</span>
+                    <span>BACK</span>
+                </button>
+            </div>
+
+            <!-- START Button -->
+            <div class="action-wrapper" id="actionTarget">
+                <button type="button" class="action-trigger" id="startBtn" onclick="window.location.href='{{ url_for('home') }}'">
+                    <span>START</span>
+                    <span class="trigger-arrow">→</span>
+                </button>
+                <div class="action-ring"></div>
+            </div>
+
         </div>
     </main>
 
+    <!-- Exact Black Footer (Reveals on Scroll) -->
     <footer class="site-footer" id="aboutFooter">
         <div class="footer-top">
             <h2 class="footer-main-title">Design by Artham</h2>
             <a href="https://instagram.com/designwithartham" target="_blank" class="footer-social-link">
-                <span class="insta-icon-box">&#9825;</span>
+                <span class="insta-icon-box">♡</span>
                 <span>@designwithartham</span>
             </a>
         </div>
+
         <div class="footer-divider"></div>
+
         <div class="footer-columns">
+            <!-- About Us Column -->
             <div class="footer-col">
                 <h3>About Us</h3>
                 <ul>
@@ -76,36 +101,41 @@
                     <li><a href="#">Careers</a></li>
                     <li><a href="#">What We Offer</a></li>
                 </ul>
-                <p class="footer-tagline">Crafting unscripted moments that turn strangers into a tribe.</p>
+                <p class="footer-tagline">
+                    Crafting unscripted moments that turn strangers into a tribe.
+                </p>
             </div>
+
+            <!-- Terms & Info Column -->
             <div class="footer-col">
-                <h3>Terms &amp; Info</h3>
+                <h3>Terms & Info</h3>
                 <ul>
                     <li><a href="#">Disclaimer</a></li>
-                    <li><a href="#">Terms &amp; Conditions</a></li>
+                    <li><a href="#">Terms & Conditions</a></li>
                     <li><a href="#">Privacy</a></li>
                     <li><a href="#">Cancellation</a></li>
                 </ul>
             </div>
         </div>
+
+        <!-- Bottom Bar -->
         <div class="footer-bottom-bar">
             <div class="footer-bottom-left">
                 <span class="footer-brand-mini">SMOभर</span>
-                <span>&copy; 2026 SAFARNAMA. All Rights Reserved.</span>
+                <span>© 2026 SAFARNAMA. All Rights Reserved.</span>
             </div>
-            <div class="footer-bottom-right"><span>&#127760; ENG &middot; INR</span></div>
+            <div class="footer-bottom-right">
+                <span>🌐 ENG · INR</span>
+            </div>
         </div>
     </footer>
 
+    <!-- Scripts: Cursor Circle Follower + Water Flow Animation Loop -->
     <script>
-        // Auth guard — redirect to login if no session token
-        if (!sessionStorage.getItem("session_token")) {
-            window.location.href = "{{ url_for('login') }}";
-        }
-
         const smokePattern = document.getElementById("smokePattern");
         const turbulence = document.getElementById("waterTurbulence");
 
+        // 1. Mouse/Touch Coordinates to Move the Circle Mask
         window.addEventListener("mousemove", (e) => {
             smokePattern.style.setProperty("--mouse-x", e.clientX + "px");
             smokePattern.style.setProperty("--mouse-y", e.clientY + "px");
@@ -119,6 +149,7 @@
             }
         });
 
+        // 2. Liquid Wave Animation (Shifts turbulence frequencies smoothly)
         let frame = 0;
         function animateWater() {
             frame += 0.008;
@@ -129,18 +160,21 @@
         }
         animateWater();
 
-        document.getElementById("logoutBtn").addEventListener("click", async () => {
-            const token = sessionStorage.getItem("session_token");
-            if (token) {
-                try {
-                    await fetch("/api/auth/logout", {
-                        method: "POST",
-                        headers: { "Authorization": "Bearer " + token }
-                    });
-                } catch {}
-            }
+        // 3. Logout
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+            sessionStorage.clear();
+            (async () => {
+            const token = localStorage.getItem("smobhar_session_token");
+            try { await fetch("/api/auth/logout", { method: "POST", headers: token ? { "Authorization": "Bearer " + token } : {} }); } catch(e){}
+            localStorage.removeItem("smobhar_session_token");
             sessionStorage.clear();
             window.location.href = "{{ url_for('login') }}";
+        })()
+        });
+
+        // 4. Deploy Table Action
+        document.getElementById("startBtn").addEventListener("click", () => {
+            console.log("Deploy table triggered");
         });
     </script>
 </body>

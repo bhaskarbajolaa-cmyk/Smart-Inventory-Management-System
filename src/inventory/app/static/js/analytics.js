@@ -64,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
         logoutBtn.addEventListener("click", () => {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
+            localStorage.removeItem("smobhar_session_token");
             window.location.href = "/login";
         });
     }
@@ -76,6 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(endpoint, { headers });
             if (res.status === 401) {
                 localStorage.removeItem("token");
+                localStorage.removeItem("smobhar_session_token");
                 window.location.href = "/login";
                 return null;
             }

@@ -13,7 +13,7 @@ from decimal import Decimal, InvalidOperation
 import time
 from typing import Any
 
-from inventory.access_control.models import Role
+from inventory.access_control.models import Permission, Role, TableAccessGrant
 from inventory.app.services import ApplicationServices
 from inventory.app.workflows import submit_sale_job
 from inventory.auth.models import Session, User
@@ -344,16 +344,31 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         """List all available roles and their permission grants."""
         require_session()
         roles = services.role_repository.find_all()
+
+        grant_rows = services.database_manager.execute_query(
+            """
+            SELECT g.role_id, p.code
+            FROM table_access_grants g
+            JOIN permissions p ON p.permission_id = g.permission_id
+            ORDER BY p.permission_id ASC
+            """
+        )
+        grants_by_role: dict[int, set[str]] = {}
+        for row in grant_rows:
+            grants_by_role.setdefault(int(row["role_id"]), set()).add(row["code"])
+
+        user_rows = services.database_manager.execute_query("SELECT user_id, username FROM users")
+        usernames = {int(row["user_id"]): row["username"] for row in user_rows}
+
         return jsonify([
             {
                 "role_id": r.role_id,
                 "role_name": r.role_name,
                 "created_by": r.created_by,
+                "created_by_username": usernames.get(int(r.created_by), ""),
                 "is_system_default": r.is_system_default,
                 "default_job_priority": r.default_job_priority,
-                "permissions": sorted(list({
-                    g.permission_code for g in r.grants if g.permission_code
-                })),
+                "permissions": sorted(grants_by_role.get(int(r.role_id), set())),
             }
             for r in roles
         ])
@@ -376,24 +391,182 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         except (TypeError, ValueError):
             abort(400, description="default_job_priority must be an integer.")
 
+        created_by = payload.get("created_by", user.user_id)
+        try:
+            created_by = int(created_by)
+        except (TypeError, ValueError):
+            abort(400, description="created_by must be an integer user id.")
+        if created_by != 0 and services.user_repository.find_by_id(created_by) is None:
+            abort(400, description=f"created_by {created_by} does not match an existing user.")
+
+        is_system_default = payload.get("is_system_default", False)
+        if isinstance(is_system_default, str):
+            is_system_default = is_system_default.strip().lower() in {"true", "1", "yes"}
+        is_system_default = bool(is_system_default)
+
+        raw_permissions = payload.get("permissions", [])
+        if isinstance(raw_permissions, str):
+            permission_codes = [code.strip().upper() for code in raw_permissions.split(",") if code.strip()]
+        elif isinstance(raw_permissions, list):
+            permission_codes = [str(code).strip().upper() for code in raw_permissions if str(code).strip()]
+        else:
+            abort(400, description="permissions must be a comma-separated string or a list of codes.")
+        permission_codes = list(dict.fromkeys(permission_codes))
+
+        permission_rows = services.database_manager.execute_query(
+            "SELECT permission_id, code, description FROM permissions"
+        )
+        permission_lookup = {
+            str(row["code"]).upper(): row
+            for row in permission_rows
+        }
+        unknown_codes = [code for code in permission_codes if code not in permission_lookup]
+        if unknown_codes:
+            valid_codes = ", ".join(sorted(permission_lookup))
+            abort(400, description=f"Unknown permission code(s): {', '.join(unknown_codes)}. Valid codes: {valid_codes}")
+
         existing_roles = services.role_repository.find_all()
         if any(r.role_name.lower() == role_name.strip().lower() for r in existing_roles):
             abort(409, description=f"Role '{role_name.strip()}' already exists.")
 
+        grants = [
+            TableAccessGrant(
+                grant_id=0,
+                role_id=0,
+                permission_id=int(permission_lookup[code]["permission_id"]),
+                table_name=None,
+                granted_by=user.user_id,
+                granted_at=datetime.now(),
+                permission=Permission(
+                    permission_id=int(permission_lookup[code]["permission_id"]),
+                    code=permission_lookup[code]["code"],
+                    description=permission_lookup[code]["description"] or "",
+                ),
+                permission_code=permission_lookup[code]["code"],
+            )
+            for code in permission_codes
+        ]
+
         new_role = Role(
             role_id=0,
             role_name=role_name.strip(),
-            created_by=user.user_id,
-            is_system_default=False,
+            created_by=created_by,
+            is_system_default=is_system_default,
             default_job_priority=priority,
+            grants=grants,
         )
         saved = services.role_repository.save(new_role)
         return jsonify({
             "role_id": saved.role_id,
             "role_name": saved.role_name,
+            "created_by": saved.created_by,
             "is_system_default": saved.is_system_default,
             "default_job_priority": saved.default_job_priority,
+            "permissions": permission_codes,
         }), 201
+
+    @app.put("/api/admin/roles/<int:role_id>")
+    def update_role(role_id: int) -> Any:
+        """Update a role's details and permission grants (Administrator only)."""
+        admin, _role = require_permission("ADMIN", "roles")
+        existing = services.role_repository.find_by_id(role_id)
+        if existing is None:
+            abort(404, description="Role not found.")
+
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+
+        role_name = payload.get("role_name", existing.role_name)
+        if not isinstance(role_name, str) or not role_name.strip():
+            abort(400, description="role_name must be a non-empty string.")
+        role_name = role_name.strip()
+
+        priority = payload.get("default_job_priority", existing.default_job_priority)
+        try:
+            priority = int(priority)
+        except (TypeError, ValueError):
+            abort(400, description="default_job_priority must be an integer.")
+
+        created_by = payload.get("created_by", existing.created_by)
+        try:
+            created_by = int(created_by)
+        except (TypeError, ValueError):
+            abort(400, description="created_by must be an integer user id.")
+        if created_by != 0 and services.user_repository.find_by_id(created_by) is None:
+            abort(400, description=f"created_by {created_by} does not match an existing user.")
+
+        is_system_default = payload.get("is_system_default", existing.is_system_default)
+        if isinstance(is_system_default, str):
+            is_system_default = is_system_default.strip().lower() in {"true", "1", "yes"}
+        is_system_default = bool(is_system_default)
+
+        # Seeded built-in roles must stay system-protected and attributed to System.
+        if existing.is_system_default and existing.created_by == 0:
+            created_by = 0
+            is_system_default = True
+
+        duplicate = any(
+            r.role_id != role_id and r.role_name.lower() == role_name.lower()
+            for r in services.role_repository.find_all()
+        )
+        if duplicate:
+            abort(409, description=f"Role '{role_name}' already exists.")
+
+        permission_codes: list[str] | None = None
+        permission_lookup: dict[str, Any] = {}
+        if "permissions" in payload:
+            raw_permissions = payload.get("permissions") or []
+            if isinstance(raw_permissions, str):
+                permission_codes = [code.strip().upper() for code in raw_permissions.split(",") if code.strip()]
+            elif isinstance(raw_permissions, list):
+                permission_codes = [str(code).strip().upper() for code in raw_permissions if str(code).strip()]
+            else:
+                abort(400, description="permissions must be a comma-separated string or a list of codes.")
+            permission_codes = list(dict.fromkeys(permission_codes))
+
+            permission_rows = services.database_manager.execute_query(
+                "SELECT permission_id, code FROM permissions"
+            )
+            permission_lookup = {str(row["code"]).upper(): row for row in permission_rows}
+            unknown_codes = [code for code in permission_codes if code not in permission_lookup]
+            if unknown_codes:
+                valid_codes = ", ".join(sorted(permission_lookup))
+                abort(400, description=f"Unknown permission code(s): {', '.join(unknown_codes)}. Valid codes: {valid_codes}")
+
+        services.database_manager.execute_query(
+            """UPDATE roles
+               SET role_name = ?, created_by = ?, is_system_default = ?, default_job_priority = ?
+               WHERE role_id = ?""",
+            (role_name, created_by, 1 if is_system_default else 0, priority, role_id),
+        )
+
+        if permission_codes is not None:
+            services.database_manager.execute_query(
+                "DELETE FROM table_access_grants WHERE role_id = ?", (role_id,)
+            )
+            granted_at = datetime.now().isoformat()
+            for code in permission_codes:
+                services.database_manager.execute_query(
+                    """INSERT INTO table_access_grants
+                       (role_id, permission_id, table_name, granted_by, granted_at)
+                       VALUES (?, ?, NULL, ?, ?)""",
+                    (role_id, int(permission_lookup[code]["permission_id"]), admin.user_id, granted_at),
+                )
+
+        updated = services.role_repository.find_by_id(role_id)
+        granted_codes = sorted({
+            grant.permission.code if grant.permission is not None else (grant.permission_code or "")
+            for grant in (updated.grants if updated else [])
+        } - {""})
+        return jsonify({
+            "role_id": role_id,
+            "role_name": role_name,
+            "created_by": created_by,
+            "is_system_default": is_system_default,
+            "default_job_priority": priority,
+            "permissions": granted_codes,
+        })
 
     @app.delete("/api/admin/roles/<int:role_id>")
     def delete_role(role_id: int) -> Any:
@@ -427,7 +600,7 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         if not isinstance(payload, dict):
             abort(400, description="Expected a JSON object.")
 
-        username = payload.get("username")
+        username = payload.get("username") or payload.get("name")
         email = payload.get("email", "")
         password = payload.get("password")
 
@@ -456,10 +629,22 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         if not isinstance(payload, dict):
             abort(400, description="Expected a JSON object.")
 
-        username = payload.get("username")
+        identifier = payload.get("username") or payload.get("email")
         password = payload.get("password")
-        if not isinstance(username, str) or not isinstance(password, str):
+        if not isinstance(identifier, str) or not isinstance(password, str):
             abort(400, description="username and password must be strings.")
+
+        username = identifier.strip()
+        if "@" in username:
+            try:
+                rows = services.database_manager.execute_query(
+                    "SELECT username FROM users WHERE LOWER(email) = LOWER(?)",
+                    (username,),
+                )
+                if rows:
+                    username = str(rows[0]["username"])
+            except Exception:
+                pass
 
         try:
             session = services.authentication.login(username, password)
@@ -509,6 +694,108 @@ def create_app(services: ApplicationServices | None = None) -> Any:
             }
         )
 
+    @app.get("/api/permissions")
+    def list_permissions() -> Any:
+        require_session()
+        rows = services.database_manager.execute_query(
+            "SELECT permission_id, code, description FROM permissions ORDER BY permission_id ASC"
+        )
+        return jsonify([
+            {
+                "permission_id": r["permission_id"],
+                "code": r["code"],
+                "description": r["description"] or "",
+            }
+            for r in rows
+        ])
+
+    @app.post("/api/admin/permissions")
+    def create_permission() -> Any:
+        require_permission("ADMIN", "roles")
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+        code = payload.get("code")
+        description = payload.get("description", "")
+        if not isinstance(code, str) or not code.strip():
+            abort(400, description="code must be a non-empty string.")
+        code = code.strip().upper()
+        existing = services.database_manager.execute_query(
+            "SELECT permission_id FROM permissions WHERE UPPER(code) = UPPER(?)", (code,)
+        )
+        if existing:
+            abort(409, description=f"Permission code '{code}' already exists.")
+        services.database_manager.execute_query(
+            "INSERT INTO permissions (code, description) VALUES (?, ?)",
+            (code, str(description).strip()),
+        )
+        rows = services.database_manager.execute_query(
+            "SELECT permission_id, code, description FROM permissions WHERE UPPER(code) = UPPER(?)", (code,)
+        )
+        row = rows[0]
+        return jsonify({"permission_id": row["permission_id"], "code": row["code"], "description": row["description"]}), 201
+
+    @app.put("/api/admin/permissions/<int:permission_id>")
+    def update_permission(permission_id: int) -> Any:
+        """Update a permission's description. Code is immutable after creation."""
+        require_permission("ADMIN", "roles")
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+        description = payload.get("description")
+        if not isinstance(description, str):
+            abort(400, description="description must be a string.")
+        description = description.strip()
+        
+        # Verify permission exists
+        existing = services.database_manager.execute_query(
+            "SELECT permission_id, code FROM permissions WHERE permission_id = ?", (permission_id,)
+        )
+        if not existing:
+            abort(404, description=f"Permission ID {permission_id} not found.")
+        
+        # Update only the description
+        services.database_manager.execute_query(
+            "UPDATE permissions SET description = ? WHERE permission_id = ?",
+            (description, permission_id),
+        )
+        
+        # Fetch and return updated permission
+        rows = services.database_manager.execute_query(
+            "SELECT permission_id, code, description FROM permissions WHERE permission_id = ?", (permission_id,)
+        )
+        row = rows[0]
+        return jsonify({"permission_id": row["permission_id"], "code": row["code"], "description": row["description"]})
+
+    @app.delete("/api/admin/permissions/<int:permission_id>")
+    def delete_permission(permission_id: int) -> Any:
+        """Delete a permission if not in use by any role."""
+        require_permission("ADMIN", "roles")
+        
+        # Verify permission exists
+        existing = services.database_manager.execute_query(
+            "SELECT permission_id, code FROM permissions WHERE permission_id = ?", (permission_id,)
+        )
+        if not existing:
+            abort(404, description=f"Permission ID {permission_id} not found.")
+        
+        # Check if permission is referenced in table_access_grants
+        usage_check = services.database_manager.execute_query(
+            "SELECT COUNT(*) as usage_count FROM table_access_grants WHERE permission_id = ?",
+            (permission_id,)
+        )
+        usage_count = usage_check[0]["usage_count"] if usage_check else 0
+        
+        if usage_count > 0:
+            abort(409, description="Cannot delete permission: it is currently assigned to one or more roles")
+        
+        # Delete the permission
+        services.database_manager.execute_query(
+            "DELETE FROM permissions WHERE permission_id = ?", (permission_id,)
+        )
+        
+        return "", 204
+
     @app.get("/api/products")
     def list_products() -> Any:
         require_permission("VIEW", "products")
@@ -530,16 +817,125 @@ def create_app(services: ApplicationServices | None = None) -> Any:
 
         products = services.product_repository.find_all(filters)
         response = jsonify([product_payload(product) for product in products])
-        response.headers["X-Cache"] = services.product_repository.last_cache_status
+        response.headers["X-Cache"] = getattr(services.product_repository, "last_cache_status", "MISS")
         return response
 
     @app.get("/api/suppliers")
     def list_suppliers() -> Any:
         require_permission("VIEW", "suppliers")
         return jsonify([
-            {"supplier_id": s.supplier_id, "name": s.name}
+            {
+                "supplier_id": s.supplier_id,
+                "name": s.name,
+                "contact_email": s.contact_email,
+                "phone": s.phone,
+                "address": s.address
+            }
             for s in services.supplier_repository.find_all()
         ])
+
+    @app.post("/api/admin/suppliers")
+    def create_supplier() -> Any:
+        """Create a new supplier."""
+        require_permission("APPEND", "suppliers")
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+        
+        name = payload.get("name", "").strip()
+        contact_email = payload.get("contact_email", "").strip()
+        phone = payload.get("phone", "").strip()
+        address = payload.get("address", "").strip()
+        
+        if not name:
+            abort(400, description="name is required.")
+        if not contact_email:
+            abort(400, description="contact_email is required.")
+        if not phone:
+            abort(400, description="phone is required.")
+        if not address:
+            abort(400, description="address is required.")
+        
+        from inventory.catalog.models import Supplier
+        supplier = Supplier(
+            supplier_id=0,
+            name=name,
+            contact_email=contact_email,
+            phone=phone,
+            address=address
+        )
+        
+        created = services.supplier_repository.save(supplier)
+        return jsonify({
+            "supplier_id": created.supplier_id,
+            "name": created.name,
+            "contact_email": created.contact_email,
+            "phone": created.phone,
+            "address": created.address
+        }), 201
+
+    @app.put("/api/admin/suppliers/<int:supplier_id>")
+    def update_supplier(supplier_id: int) -> Any:
+        """Update an existing supplier."""
+        require_permission("EDIT", "suppliers")
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+        
+        # Verify supplier exists
+        existing = services.supplier_repository.find_by_id(supplier_id)
+        if existing is None:
+            abort(404, description=f"Supplier ID {supplier_id} not found.")
+        
+        name = payload.get("name", "").strip()
+        contact_email = payload.get("contact_email", "").strip()
+        phone = payload.get("phone", "").strip()
+        address = payload.get("address", "").strip()
+        
+        if not name:
+            abort(400, description="name is required.")
+        if not contact_email:
+            abort(400, description="contact_email is required.")
+        if not phone:
+            abort(400, description="phone is required.")
+        if not address:
+            abort(400, description="address is required.")
+        
+        from inventory.catalog.models import Supplier
+        supplier = Supplier(
+            supplier_id=supplier_id,
+            name=name,
+            contact_email=contact_email,
+            phone=phone,
+            address=address
+        )
+        
+        updated = services.supplier_repository.save(supplier)
+        return jsonify({
+            "supplier_id": updated.supplier_id,
+            "name": updated.name,
+            "contact_email": updated.contact_email,
+            "phone": updated.phone,
+            "address": updated.address
+        })
+
+    @app.delete("/api/admin/suppliers/<int:supplier_id>")
+    def delete_supplier(supplier_id: int) -> Any:
+        """Delete a supplier if no products reference it."""
+        require_permission("DELETE", "suppliers")
+        
+        # Verify supplier exists
+        existing = services.supplier_repository.find_by_id(supplier_id)
+        if existing is None:
+            abort(404, description=f"Supplier ID {supplier_id} not found.")
+        
+        # Repository.delete() already validates product references
+        try:
+            services.supplier_repository.delete(supplier_id)
+            return "", 204
+        except ValueError as e:
+            # Repository raises ValueError if products reference this supplier
+            abort(409, description=str(e))
 
     @app.get("/api/products/<int:product_id>")
     def get_product(product_id: int) -> Any:
@@ -548,7 +944,7 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         if product is None:
             abort(404, description="Product not found.")
         response = jsonify(product_payload(product))
-        response.headers["X-Cache"] = services.product_repository.last_cache_status
+        response.headers["X-Cache"] = getattr(services.product_repository, "last_cache_status", "MISS")
         return response
 
     @app.post("/api/cache/benchmark")

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Directory | SMOभर</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/supplierdesign.css') }}">
+</head>
+<body>
+    <!-- Hidden SVG Filter for Water Ripple -->
+    <svg class="svg-filter-hidden">
+        <filter id="waterFilter">
+            <feTurbulence id="waterTurbulence" type="fractalNoise" baseFrequency="0.015 0.015" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="22" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+    </svg>
+
+    <!-- Cursor Ripple Layer -->
+    <div class="cursor-pattern-layer" id="smokePattern"></div>
+
+    <!-- Top Sticky Navbar -->
+    <div class="navbar-wrap">
+        <header class="navbar">
+            <a href="{{ url_for('admin') }}" class="nav-brand">
+                <img src="{{ url_for('static', filename='img/smobharlogo1.png') }}" alt="SMOभर logo" class="brand-logo">
+                <span class="brand-name">
+                    <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
+                </span>
+            </a>
+
+            <div class="nav-right-group">
+                <nav class="nav-links">
+                    <a href="{{ url_for('about') }}">About us</a>
+                    <a href="{{ url_for('home') }}">Inventory Table</a>
+                    <a href="{{ url_for('admin') }}">Users Console</a>
+                    <a href="{{ url_for('suppliers') }}" class="active">Suppliers</a>
+                </nav>
+
+                <span class="admin-tag">Admin Panel</span>
+                <button type="button" class="logout-btn" id="logoutBtn">Log out</button>
+            </div>
+        </header>
+    </div>
+
+    <!-- Main Ledger Section -->
+    <main class="table-section">
+        
+        <div class="top-header-wrapper">
+            <div>
+                <h1 class="page-main-title">Supplier <span>Directory</span></h1>
+                <p class="page-sub-desc">Manage supply chain vendors, contact details, and fulfillment addresses[cite: 11].</p>
+            </div>
+            <button type="button" class="btn-workspace-pill" onclick="window.location.href='{{ url_for('admin') }}'">
+                <span>← Workspace</span>
+            </button>
+        </div>
+
+        <div class="table-glass-card">
+            <div class="table-header-bar">
+                <div class="table-header-left">
+                    <h3>Active Vendors List</h3>
+                    <p>Database schema mapping for supplier operations</p>
+                </div>
+
+                <div class="table-controls">
+                    <input type="text" id="supplierSearchInput" class="table-search-input" placeholder="Search suppliers...">
+                    <button type="button" class="btn-add-ledger" id="openAddSupplierModal">
+                        <span>+ Add New Supplier</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ledger Table Grid matching schema: supplier_id, name, contact_email, phone, address[cite: 11] -->
+            <div class="user-cards-grid">
+                <div class="user-row-card grid-header" style="grid-template-columns: 0.7fr 1.8fr 1.8fr 1.3fr 2fr 1fr;">
+                    <div>ID</div>
+                    <div>Vendor Name</div>
+                    <div>Contact Email</div>
+                    <div>Phone</div>
+                    <div>Address</div>
+                    <div style="text-align: right;">Actions</div>
+                </div>
+
+                <div id="supplierRowsTarget"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Add / Edit Supplier -->
+    <div class="modal-overlay" id="supplierModal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="supplierModalTitle">Add New Supplier</h3>
+                <button type="button" class="modal-close-btn" onclick="closeSupplierModal()">×</button>
+            </div>
+            <form id="supplierForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editSupplierId">
+                    
+                    <div class="form-field">
+                        <label for="inputName">Vendor Name</label>
+                        <input type="text" id="inputName" class="field-input-box" placeholder="e.g. Textile Hub India" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="inputEmail">Contact Email</label>
+                        <input type="email" id="inputEmail" class="field-input-box" placeholder="contact@textilehub.in" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="inputPhone">Phone Number</label>
+                        <input type="text" id="inputPhone" class="field-input-box" placeholder="+91-11-2345-6789" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="inputAddress">Fulfillment Address</label>
+                        <input type="text" id="inputAddress" class="field-input-box" placeholder="Sector 14, New Delhi" required>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-modal-cancel" onclick="closeSupplierModal()">Cancel</button>
+                    <button type="submit" class="btn-modal-submit-green">
+                        <span>Save Supplier</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="site-footer" id="aboutFooter">
+        <div class="footer-top">
+            <h2 class="footer-main-title">Design by Artham</h2>
+            <a href="https://instagram.com/designwithartham" target="_blank" class="footer-social-link">
+                <span class="insta-icon-box">♡</span>
+                <span>@designwithartham</span>
+            </a>
+        </div>
+        <div class="footer-divider"></div>
+        <div class="footer-bottom-bar">
+            <div class="footer-bottom-left">
+                <span class="footer-brand-mini">SMOभर</span>
+                <span>© 2026 SAFARNAMA. All Rights Reserved.</span>
+            </div>
+        </div>
+    </footer>
+
+    <div class="toast-notice" id="toastNotice">Action Completed Successfully</div>
+
+    <script>
+        // Enforce Admin Authentication
+        (async function initAdminAuth() {
+            const token = localStorage.getItem("smobhar_session_token");
+            if (!token) {
+                window.location.href = "{{ url_for('login') }}";
+                return;
+            }
+            try {
+                const res = await fetch("/api/auth/me", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                if (!res.ok) {
+                    localStorage.removeItem("smobhar_session_token");
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+                const user = await res.json();
+                if (user.role_id !== 1) {
+                    window.location.href = "{{ url_for('home') }}";
+                }
+            } catch (err) {}
+        })();
+
+        const smokePattern = document.getElementById("smokePattern");
+        const turbulence = document.getElementById("waterTurbulence");
+
+        window.addEventListener("mousemove", (e) => {
+            smokePattern.style.setProperty("--mouse-x", e.clientX + "px");
+            smokePattern.style.setProperty("--mouse-y", e.clientY + "px");
+        });
+
+        let frame = 0;
+        function animateWater() {
+            frame += 0.008;
+            turbulence.setAttribute("baseFrequency", `${0.015 + Math.sin(frame) * 0.003} ${0.018 + Math.cos(frame * 0.8) * 0.003}`);
+            requestAnimationFrame(animateWater);
+        }
+        animateWater();
+
+        // Global suppliers array loaded from backend
+        let suppliers = [];
+
+        function getAuthHeaders() {
+            const token = localStorage.getItem("smobhar_session_token");
+            const headers = { "Content-Type": "application/json" };
+            if (token) headers["Authorization"] = "Bearer " + token;
+            return headers;
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById("toastNotice");
+            toast.textContent = msg;
+            toast.style.background = isError ? "#ef4444" : "#10b981";
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; }, 3500);
+        }
+
+        async function loadSuppliers() {
+            try {
+                const res = await fetch("/api/suppliers", { headers: getAuthHeaders() });
+                if (res.status === 401) {
+                    localStorage.removeItem("smobhar_session_token");
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+                if (res.ok) {
+                    suppliers = await res.json();
+                    renderSuppliers();
+                } else {
+                    const err = await res.json();
+                    showToast(err.description || "Failed to load suppliers.", true);
+                }
+            } catch (err) {
+                showToast("Connection error fetching suppliers.", true);
+            }
+        }
+
+        function renderSuppliers() {
+            const target = document.getElementById("supplierRowsTarget");
+            const search = document.getElementById("supplierSearchInput").value.toLowerCase();
+
+            target.innerHTML = "";
+            const filtered = suppliers.filter(s => s.name.toLowerCase().includes(search) || s.contact_email.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                target.innerHTML = `<div style="text-align:center; padding:32px; color:#64748b; font-weight:600;">No suppliers found.</div>`;
+                return;
+            }
+
+            filtered.forEach(s => {
+                const div = document.createElement("div");
+                div.className = "user-row-card";
+                div.style.gridTemplateColumns = "0.7fr 1.8fr 1.8fr 1.3fr 2fr 1fr";
+
+                div.innerHTML = `
+                    <div style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#475569;">#${s.supplier_id}</div>
+                    <div style="font-weight:800; color:var(--text-dark);">${s.name}</div>
+                    <div><span class="supplier-pill">✉️ ${s.contact_email}</span></div>
+                    <div style="font-family:'JetBrains Mono',monospace; font-size:12.5px; color:#475569;">${s.phone}</div>
+                    <div style="font-size:13px; color:var(--text-muted);">${s.address}</div>
+                    <div>
+                        <div class="action-btn-group">
+                            <button type="button" class="btn-icon-action btn-edit-icon" onclick="openEditSupplierModal(${s.supplier_id})">✏️</button>
+                            <button type="button" class="btn-icon-action btn-del-icon" onclick="deleteSupplier(${s.supplier_id})">🗑</button>
+                        </div>
+                    </div>
+                `;
+                target.appendChild(div);
+            });
+        }
+
+        function openSupplierModal() { document.getElementById("supplierModal").classList.add("active"); }
+        function closeSupplierModal() { document.getElementById("supplierModal").classList.remove("active"); }
+
+        document.getElementById("openAddSupplierModal").addEventListener("click", () => {
+            document.getElementById("supplierForm").reset();
+            document.getElementById("editSupplierId").value = "";
+            document.getElementById("supplierModalTitle").textContent = "Add New Supplier";
+            openSupplierModal();
+        });
+
+        function openEditSupplierModal(id) {
+            const s = suppliers.find(item => item.supplier_id === id);
+            if (!s) return;
+
+            document.getElementById("editSupplierId").value = s.supplier_id;
+            document.getElementById("inputName").value = s.name;
+            document.getElementById("inputEmail").value = s.contact_email;
+            document.getElementById("inputPhone").value = s.phone;
+            document.getElementById("inputAddress").value = s.address;
+            document.getElementById("supplierModalTitle").textContent = `Edit Supplier: #${s.supplier_id}`;
+            openSupplierModal();
+        }
+
+        document.getElementById("supplierForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const editId = document.getElementById("editSupplierId").value;
+            const name = document.getElementById("inputName").value.trim();
+            const email = document.getElementById("inputEmail").value.trim();
+            const phone = document.getElementById("inputPhone").value.trim();
+            const address = document.getElementById("inputAddress").value.trim();
+
+            try {
+                let res;
+                if (editId) {
+                    // UPDATE
+                    res = await fetch(`/api/admin/suppliers/${editId}`, {
+                        method: "PUT",
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({
+                            name,
+                            contact_email: email,
+                            phone,
+                            address
+                        })
+                    });
+                } else {
+                    // CREATE
+                    res = await fetch("/api/admin/suppliers", {
+                        method: "POST",
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({
+                            name,
+                            contact_email: email,
+                            phone,
+                            address
+                        })
+                    });
+                }
+
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.description || data.error || "Operation failed.", true);
+                    return;
+                }
+
+                closeSupplierModal();
+                showToast(editId ? `Supplier #${editId} updated!` : `New supplier '${name}' added!`);
+                await loadSuppliers();
+            } catch (err) {
+                showToast("Connection error.", true);
+            }
+        });
+
+        async function deleteSupplier(id) {
+            if (!confirm(`Delete Supplier ID ${id}?`)) return;
+            
+            try {
+                const res = await fetch(`/api/admin/suppliers/${id}`, {
+                    method: "DELETE",
+                    headers: getAuthHeaders()
+                });
+
+                if (!res.ok && res.status !== 204) {
+                    const data = await res.json();
+                    showToast(data.description || "Failed to delete supplier.", true);
+                    return;
+                }
+
+                showToast(`Supplier ID ${id} deleted successfully!`);
+                await loadSuppliers();
+            } catch (err) {
+                showToast("Connection error deleting supplier.", true);
+            }
+        }
+
+        document.getElementById("supplierSearchInput").addEventListener("input", renderSuppliers);
+
+        document.getElementById("logoutBtn").addEventListener("click", async () => {
+            const token = localStorage.getItem("smobhar_session_token");
+            try {
+                await fetch("/api/auth/logout", {
+                    method: "POST",
+                    headers: token ? { "Authorization": "Bearer " + token } : {}
+                });
+            } catch (e) {}
+            localStorage.removeItem("smobhar_session_token");
+            sessionStorage.clear();
+            window.location.href = "{{ url_for('login') }}";
+        });
+
+        // Initial Load - fetch from backend instead of localStorage
+        loadSuppliers();
+    </script>
+</body>
+</html>
