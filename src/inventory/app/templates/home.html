@@ -28,6 +28,7 @@
                 <nav class="nav-links">
                     <a href="{{ url_for('about') }}">About us</a>
                     <a href="{{ url_for('home') }}" class="active">Inventory Table</a>
+                    <a href="{{ url_for('admin') }}" id="navAdminLink" style="display: none;">Admin Command</a>
                 </nav>
                 <button type="button" class="logout-btn" id="logoutBtn">Log out</button>
             </div>
@@ -660,6 +661,10 @@
             }
             document.getElementById("openAddProductModalBtn").style.display =
                 can("APPEND") ? "" : "none";
+            const adminLink = document.getElementById("navAdminLink");
+            if (adminLink) {
+                adminLink.style.display = can("ADMIN") ? "inline-flex" : "none";
+            }
         }
 
         (async () => {

@@ -339,6 +339,74 @@ def create_app(services: ApplicationServices | None = None) -> Any:
             abort(404, description="User not found.")
         return "", 204
 
+    @app.get("/api/roles")
+    def list_roles() -> Any:
+        """List all available roles and their permission grants."""
+        require_session()
+        roles = services.role_repository.find_all()
+        return jsonify([
+            {
+                "role_id": r.role_id,
+                "role_name": r.role_name,
+                "created_by": r.created_by,
+                "is_system_default": r.is_system_default,
+                "default_job_priority": r.default_job_priority,
+                "permissions": sorted(list({
+                    g.permission_code for g in r.grants if g.permission_code
+                })),
+            }
+            for r in roles
+        ])
+
+    @app.post("/api/admin/roles")
+    def create_role() -> Any:
+        """Create a new role (Administrator only)."""
+        user, _role = require_permission("ADMIN", "roles")
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            abort(400, description="Expected a JSON object.")
+
+        role_name = payload.get("role_name")
+        if not isinstance(role_name, str) or not role_name.strip():
+            abort(400, description="role_name must be a non-empty string.")
+
+        priority = payload.get("default_job_priority", 3)
+        try:
+            priority = int(priority)
+        except (TypeError, ValueError):
+            abort(400, description="default_job_priority must be an integer.")
+
+        existing_roles = services.role_repository.find_all()
+        if any(r.role_name.lower() == role_name.strip().lower() for r in existing_roles):
+            abort(409, description=f"Role '{role_name.strip()}' already exists.")
+
+        new_role = Role(
+            role_id=0,
+            role_name=role_name.strip(),
+            created_by=user.user_id,
+            is_system_default=False,
+            default_job_priority=priority,
+        )
+        saved = services.role_repository.save(new_role)
+        return jsonify({
+            "role_id": saved.role_id,
+            "role_name": saved.role_name,
+            "is_system_default": saved.is_system_default,
+            "default_job_priority": saved.default_job_priority,
+        }), 201
+
+    @app.delete("/api/admin/roles/<int:role_id>")
+    def delete_role(role_id: int) -> Any:
+        """Delete an eligible custom role (Administrator only)."""
+        require_permission("ADMIN", "roles")
+        try:
+            services.role_repository.delete(role_id)
+        except KeyError:
+            abort(404, description="Role not found.")
+        except ValueError as exc:
+            abort(400, description=str(exc))
+        return "", 204
+
     @app.get("/health")
     def health() -> Any:
         """Report that the HTTP process is serving requests."""

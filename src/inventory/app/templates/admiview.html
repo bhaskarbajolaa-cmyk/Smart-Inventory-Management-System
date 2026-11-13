@@ -36,6 +36,23 @@
         </header>
     </div>
 
+    <!-- Access Denied Card (Rendered for non-admin users) -->
+    <section id="accessDeniedCard" style="display:none; margin: 80px auto; max-width: 620px; text-align: center; padding: 48px 32px; background: rgba(22, 24, 30, 0.9); backdrop-filter: blur(16px); border-radius: 20px; border: 1px solid rgba(239, 68, 68, 0.35); box-shadow: 0 20px 50px rgba(0,0,0,0.7);">
+        <div style="font-size: 54px; margin-bottom: 16px;">🔒</div>
+        <h2 style="color: #ef4444; font-size: 26px; margin-bottom: 12px; font-weight: 700;">Administrator Access Required</h2>
+        <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6; margin-bottom: 28px;">
+            Role creation and user management are strictly restricted to <strong>Administrator</strong> accounts. Your current profile does not have permission to view or manage enterprise roles.
+        </p>
+        <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('home') }}" class="btn-action-base" style="background: #2563eb; color: #fff; text-decoration: none; padding: 12px 26px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                <span>&larr; Return to Dashboard</span>
+            </a>
+            <button type="button" class="btn-action-base" id="deniedLogoutBtn" style="background: rgba(255,255,255,0.08); color: #e2e8f0; padding: 12px 26px; border-radius: 9999px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">
+                Switch Account
+            </button>
+        </div>
+    </section>
+
     <main class="stage-container" id="heroStage">
         <div class="stage-pill">
             <span class="stage-pill-dot"></span>
@@ -486,9 +503,7 @@
             window.location.href = "{{ url_for('login') }}";
         });
 
-        // ── Admin gate ──
-        // Every admin endpoint already returns 403 without the ADMIN permission;
-        // this only removes controls that would otherwise look broken.
+        // ── Admin gate (Strict enforcement for Issue #14) ──
         async function enforceAdminAccess() {
             let perms = [];
             try {
@@ -499,19 +514,27 @@
                     return;
                 }
                 if (res.ok) perms = (await res.json()).permissions || [];
-            } catch { return; }
+            } catch {
+                sessionStorage.clear();
+                window.location.href = "{{ url_for('login') }}";
+                return;
+            }
 
             if (perms.includes("ADMIN")) return;
 
-            ["openViewUsersBtn", "openAddModalBtn"].forEach((id) => {
-                const el = document.getElementById(id);
-                if (el) el.style.display = "none";
-            });
-            const banner = document.createElement("div");
-            banner.className = "message error";
-            banner.style.cssText = "margin:16px auto;max-width:640px;text-align:center;font-weight:600;";
-            banner.textContent = "You do not have admin permission to view users.";
-            document.querySelector("main")?.prepend(banner);
+            // Non-admin user: Block access completely and show friendly 403 screen
+            if (heroStage) heroStage.style.display = "none";
+            if (userDirectorySection) userDirectorySection.style.display = "none";
+            const deniedCard = document.getElementById("accessDeniedCard");
+            if (deniedCard) deniedCard.style.display = "block";
+
+            const deniedLogout = document.getElementById("deniedLogoutBtn");
+            if (deniedLogout) {
+                deniedLogout.addEventListener("click", () => {
+                    sessionStorage.clear();
+                    window.location.href = "{{ url_for('login') }}";
+                });
+            }
         }
 
         enforceAdminAccess();
