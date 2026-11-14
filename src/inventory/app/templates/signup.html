@@ -12,6 +12,7 @@
     <div class="ambient ambient-two"></div>
     <div class="color-wash"></div>
 
+    <!-- Sticky Navbar -->
     <div class="navbar-wrap">
         <header class="navbar">
             <a href="{{ url_for('login') }}" class="nav-brand">
@@ -20,6 +21,7 @@
                     <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
                 </span>
             </a>
+
             <nav class="nav-links">
                 <a href="{{ url_for('about') }}">About us</a>
                 <a href="#support">Support</a>
@@ -27,8 +29,10 @@
         </header>
     </div>
 
+    <!-- First Full-Screen Viewport: Only the Signup Card -->
     <main class="hero-wrapper">
         <section class="auth-card">
+            <!-- Left Form Panel -->
             <div class="form-panel">
                 <div class="form-content">
                     <h1>Get Started Now</h1>
@@ -39,14 +43,10 @@
                             <input type="text" id="fullName" placeholder="Enter your name" autocomplete="name" required>
                         </div>
 
-                        <label for="signupUsername">Username</label>
+                        <label for="signupEmail">Email</label>
                         <div class="input-box">
-                            <input type="text" id="signupUsername" placeholder="Enter your username" autocomplete="username" required>
-                        </div>
-
-                        <label for="signupEmail">Email <span style="font-weight:400; color:#9ca3af;">(optional)</span></label>
-                        <div class="input-box">
-                            <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email">
+                            <span class="field-icon" aria-hidden="true">&#9993;</span>
+                            <input type="email" id="signupEmail" placeholder="Enter your email" autocomplete="email" required>
                         </div>
 
                         <label for="signupPassword">Password</label>
@@ -55,12 +55,18 @@
                             <input type="password" id="signupPassword" placeholder="••••••••" minlength="8" autocomplete="new-password" required>
                         </div>
 
+                        <div class="form-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="saveInfo"> Save
+                            </label>
+                        </div>
+
                         <p class="message" id="signupMessage" role="status" aria-live="polite"></p>
 
-                        <button type="submit" class="btn-red" id="signupBtn">
-                            <span class="btn-shine"></span>
-                            <span>Sign up</span>
-                            <span class="btn-arrow">&rarr;</span>
+                        <button type="submit" class="btn-red" id="signUpBtn">
+                         <span class="btn-shine"></span>
+                         <span>Sign up</span>
+                         <span class="btn-arrow">&rarr;</span>
                         </button>
 
                         <p class="bottom-switch">
@@ -70,12 +76,14 @@
                 </div>
             </div>
 
+            <!-- Right Image Side -->
             <aside class="art-panel">
                 <img src="{{ url_for('static', filename='img/Login1.png') }}" alt="SMOभर visual" class="art-panel-img">
             </aside>
         </section>
     </main>
 
+    <!-- Black Footer (Reveals only after scrolling down) -->
     <footer class="site-footer">
         <div class="footer-top">
             <h2 class="footer-main-title">Design by Artham</h2>
@@ -84,94 +92,238 @@
                 <span>@designwithartham</span>
             </a>
         </div>
+
         <div class="footer-divider"></div>
+
         <div class="footer-columns">
+            <!-- About Us Column -->
             <div class="footer-col" id="about">
                 <h3>About Us</h3>
                 <ul>
                     <li><a href="#about">Our Story</a></li>
                     <li><a href="#about">Testimonials</a></li>
                     <li><a href="#about">Careers</a></li>
+                    <li><a href="#about">Who Travel With Us</a></li>
                     <li><a href="#about">What We Offer</a></li>
                 </ul>
-                <p class="footer-tagline">Crafting unscripted moments that turn strangers into a tribe.</p>
+                <p class="footer-tagline">
+                    Crafting unscripted moments that turn strangers into a tribe.
+                </p>
             </div>
+
+            <!-- Support Column -->
             <div class="footer-col" id="support">
                 <h3>Support</h3>
                 <ul>
+                    <li><button type="button" class="team-modal-trigger" data-type="email">Email</button></li>
+                    <li><button type="button" class="team-modal-trigger" data-type="linkedin">LinkedIn</button></li>
                     <li><a href="#support">Contact Us</a></li>
                     <li><a href="#support">Feedback Form</a></li>
                 </ul>
             </div>
+
+            <!-- Terms & Info Column -->
             <div class="footer-col">
-                <h3>Terms &amp; Info</h3>
+                <h3>Terms & Info</h3>
                 <ul>
                     <li><a href="#">Disclaimer</a></li>
-                    <li><a href="#">Terms &amp; Conditions</a></li>
+                    <li><a href="#">Terms & Conditions</a></li>
                     <li><a href="#">Privacy</a></li>
                     <li><a href="#">Cancellation</a></li>
                 </ul>
             </div>
         </div>
+
+        <!-- Bottom Bar -->
         <div class="footer-bottom-bar">
             <div class="footer-bottom-left">
                 <span class="footer-brand-mini">SMOभर</span>
                 <span>&copy; 2026 SAFARNAMA. All Rights Reserved.</span>
             </div>
-            <div class="footer-bottom-right"><span>&#127760; ENG &middot; INR</span></div>
+            <div class="footer-bottom-right">
+                <span>&#127760; ENG &middot; INR</span>
+            </div>
         </div>
     </footer>
 
-    <script>
-        function triggerColorBurst() {
-            document.body.classList.remove("color-burst");
-            void document.body.offsetWidth;
-            document.body.classList.add("color-burst");
-            setTimeout(() => document.body.classList.remove("color-burst"), 1000);
-        }
+    <!-- Team Contact Popup Modal -->
+    <div class="modal-overlay" id="teamModal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitle">Core Team Directory</h3>
+                <button type="button" class="modal-close" id="closeModal" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Artham Tyagi -->
+                <div class="member-item">
+                    <div class="member-info">
+                        <h4>Artham Tyagi</h4>
+                        <p>Lead Design & Engineering</p>
+                    </div>
+                    <div class="member-links">
+                        <a href="mailto:tyagiartham31@gmail.com" class="link-pill link-pill-email" target="_blank">&#9993; Email</a>
+                        <a href="https://www.linkedin.com/in/arthamtyagi/" class="link-pill link-pill-linkedin" target="_blank">in LinkedIn</a>
+                    </div>
+                </div>
 
+                <!-- Krishna Tyagi -->
+                <div class="member-item">
+                    <div class="member-info">
+                        <h4>Krishna Tyagi</h4>
+                        <p>Core Development</p>
+                    </div>
+                    <div class="member-links">
+                        <a href="mailto:tyagikrishna1234@gmail.com" class="link-pill link-pill-email" target="_blank">&#9993; Email</a>
+                        <a href="https://www.linkedin.com/in/krishna-tyagi-591a4830a/" class="link-pill link-pill-linkedin" target="_blank">in LinkedIn</a>
+                    </div>
+                </div>
+
+                <!-- Ayush Prajapati -->
+                <div class="member-item">
+                    <div class="member-info">
+                        <h4>Ayush Prajapati</h4>
+                        <p>Team Member</p>
+                    </div>
+                    <div class="member-links">
+                        <span class="link-pill link-pill-empty">&#9993; Email</span>
+                        <span class="link-pill link-pill-empty">in LinkedIn</span>
+                    </div>
+                </div>
+
+                <!-- Bhaskar -->
+                <div class="member-item">
+                    <div class="member-info">
+                        <h4>Bhaskar</h4>
+                        <p>Team Member</p>
+                    </div>
+                    <div class="member-links">
+                        <span class="link-pill link-pill-empty">&#9993; Email</span>
+                        <span class="link-pill link-pill-empty">in LinkedIn</span>
+                    </div>
+                </div>
+
+                <!-- Mohit Purohit -->
+                <div class="member-item">
+                    <div class="member-info">
+                        <h4>Mohit Purohit</h4>
+                        <p>Team Member</p>
+                    </div>
+                    <div class="member-links">
+                        <span class="link-pill link-pill-empty">&#9993; Email</span>
+                        <span class="link-pill link-pill-empty">in LinkedIn</span>
+                    </div>
+                </div>
+
+                <!-- Anubhav Panwar -->
+                <div class="member-item">
+                    <div class="member-info">
+                        <h4>Anubhav Panwar</h4>
+                        <p>Team Member</p>
+                    </div>
+                    <div class="member-links">
+                        <span class="link-pill link-pill-empty">&#9993; Email</span>
+                        <span class="link-pill link-pill-empty">in LinkedIn</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
         const signupForm = document.getElementById("signupForm");
         const signupMessage = document.getElementById("signupMessage");
-        const signupBtn = document.getElementById("signupBtn");
 
         function showMessage(msg, type) {
             signupMessage.textContent = msg;
             signupMessage.className = "message " + type;
         }
 
+        function triggerColorBurst() {
+            document.body.classList.remove("color-burst");
+            void document.body.offsetWidth;
+            document.body.classList.add("color-burst");
+            setTimeout(() => {
+                document.body.classList.remove("color-burst");
+            }, 1000);
+        }
+
         signupForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             triggerColorBurst();
 
-            const username = document.getElementById("signupUsername").value.trim();
+            const name = document.getElementById("fullName").value.trim();
+            const email = document.getElementById("signupEmail").value.trim().toLowerCase();
             const password = document.getElementById("signupPassword").value;
-            const emailEl  = document.getElementById("signupEmail");
-            const email    = emailEl ? emailEl.value.trim() : "";
+            const submitBtn = document.getElementById("signUpBtn") || signupForm.querySelector("button[type='submit']");
 
-            if (!username) { showMessage("Username is required.", "error"); return; }
-            if (password.length < 8) { showMessage("Password must be at least 8 characters.", "error"); return; }
+            if (!name) {
+                showMessage("Please enter your name.", "error");
+                return;
+            }
+            if (!email) {
+                showMessage("Please enter your email.", "error");
+                return;
+            }
+            if (password.length < 8) {
+                showMessage("Password must be at least 8 characters long.", "error");
+                return;
+            }
 
-            signupBtn.disabled = true;
+            if (submitBtn) submitBtn.disabled = true;
+            showMessage("Creating your account...", "info");
+
             try {
                 const res = await fetch("/api/auth/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, email, password })
+                    body: JSON.stringify({ username: name, email: email, password: password })
                 });
-                const data = await res.json().catch(() => ({}));
-                if (res.status === 201) {
-                    showMessage("Account created! Redirecting to login...", "success");
-                    setTimeout(() => { window.location.href = "{{ url_for('login') }}"; }, 800);
-                } else if (res.status === 409) {
-                    showMessage(data.description || "Username already taken.", "error");
-                } else {
-                    showMessage(data.description || "An unexpected error occurred.", "error");
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    const errorMsg = data.description || data.error || "Failed to create account.";
+                    showMessage(errorMsg, "error");
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
                 }
-            } catch {
-                showMessage("Network error. Please try again.", "error");
-            } finally {
-                signupBtn.disabled = false;
+
+                showMessage("Account created! Redirecting to login...", "success");
+                setTimeout(() => {
+                    window.location.href = "{{ url_for('login') }}";
+                }, 800);
+            } catch (networkErr) {
+                showMessage("Connection error. Please verify the server is running.", "error");
+                if (submitBtn) submitBtn.disabled = false;
             }
+        });
+
+        /* Modal Logic */
+        const teamModal = document.getElementById("teamModal");
+        const modalTitle = document.getElementById("modalTitle");
+        const closeModal = document.getElementById("closeModal");
+
+        function openModalWithTitle(title) {
+            modalTitle.textContent = title;
+            teamModal.classList.add("active");
+            teamModal.setAttribute("aria-hidden", "false");
+        }
+
+        function hideModal() {
+            teamModal.classList.remove("active");
+            teamModal.setAttribute("aria-hidden", "true");
+        }
+
+        document.querySelectorAll(".team-modal-trigger").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const type = btn.getAttribute("data-type");
+                openModalWithTitle(type === "email" ? "Team Email Directory" : "Team LinkedIn Directory");
+            });
+        });
+
+        closeModal.addEventListener("click", hideModal);
+        teamModal.addEventListener("click", (e) => {
+            if (e.target === teamModal) hideModal();
         });
     </script>
 </body>

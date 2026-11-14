@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admiviewdesign.css') }}">
 </head>
 <body>
+    <!-- Hidden SVG Filter: Liquid water displacement waves -->
     <svg class="svg-filter-hidden">
         <filter id="waterFilter">
             <feTurbulence id="waterTurbulence" type="fractalNoise" baseFrequency="0.015 0.015" numOctaves="3" result="noise" />
@@ -14,8 +15,10 @@
         </filter>
     </svg>
 
+    <!-- Cursor Interactive Circular Mask Layer (prodbg.png) -->
     <div class="cursor-pattern-layer" id="smokePattern"></div>
 
+    <!-- Top Sticky Navbar -->
     <div class="navbar-wrap">
         <header class="navbar">
             <a href="{{ url_for('admin') }}" class="nav-brand">
@@ -24,157 +27,232 @@
                     <span class="font-smo">SMO</span><span class="font-bhar">भर</span>
                 </span>
             </a>
+
+            <!-- Right-Side Group -->
             <div class="nav-right-group">
                 <nav class="nav-links">
-                    <a href="{{ url_for('home') }}">Inventory Table</a>
+                    <button type="button" class="nav-link-btn" id="openTableHubBtn">Inventory Table</button>
                     <a href="{{ url_for('analytics_page') }}">Analytics & Intelligence</a>
                     <a href="{{ url_for('about') }}">About us</a>
                     <button type="button" class="nav-link-btn" id="openViewUsersBtn">View Users</button>
                 </nav>
+
                 <span class="admin-tag">Admin Panel</span>
                 <button type="button" class="logout-btn" id="logoutBtn">Log out</button>
             </div>
         </header>
     </div>
 
-    <!-- Access Denied Card (Rendered for non-admin users) -->
-    <section id="accessDeniedCard" style="display:none; margin: 80px auto; max-width: 620px; text-align: center; padding: 48px 32px; background: rgba(22, 24, 30, 0.9); backdrop-filter: blur(16px); border-radius: 20px; border: 1px solid rgba(239, 68, 68, 0.35); box-shadow: 0 20px 50px rgba(0,0,0,0.7);">
-        <div style="font-size: 54px; margin-bottom: 16px;">🔒</div>
-        <h2 style="color: #ef4444; font-size: 26px; margin-bottom: 12px; font-weight: 700;">Administrator Access Required</h2>
-        <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6; margin-bottom: 28px;">
-            Role creation and user management are strictly restricted to <strong>Administrator</strong> accounts. Your current profile does not have permission to view or manage enterprise roles.
-        </p>
-        <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
-            <a href="{{ url_for('home') }}" class="btn-action-base" style="background: #2563eb; color: #fff; text-decoration: none; padding: 12px 26px; border-radius: 9999px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
-                <span>&larr; Return to Dashboard</span>
-            </a>
-            <button type="button" class="btn-action-base" id="deniedLogoutBtn" style="background: rgba(255,255,255,0.08); color: #e2e8f0; padding: 12px 26px; border-radius: 9999px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">
-                Switch Account
-            </button>
-        </div>
-    </section>
-
+    <!-- Cardless Open Hero Stage -->
     <main class="stage-container" id="heroStage">
         <div class="stage-pill">
             <span class="stage-pill-dot"></span>
             <span>Enterprise Admin Control</span>
         </div>
-        <h1 class="stage-title">Where Authority Meets <span>Pure Precision.</span></h1>
-        <p class="stage-desc">Authorize team members, configure enterprise roles, and audit access credentials across your entire workspace inventory.</p>
 
+        <h1 class="stage-title">
+            Where Authority Meets <span>Pure Precision.</span>
+        </h1>
+
+        <p class="stage-desc">
+            Authorize team members, configure enterprise roles, and audit access credentials
+            across your entire workspace inventory.
+        </p>
+
+        <!-- 2 Symmetrical Centered Action Buttons (Add User & Move to Workplace) -->
         <div class="admin-action-row" id="actionTarget">
+            
+            <!-- 1. Add User Button -->
             <div class="btn-aura-wrapper">
                 <button type="button" class="btn-action-base btn-add-user" id="openAddModalBtn">
                     <span>+ Add New User</span>
                 </button>
                 <div class="action-ring action-ring-red"></div>
             </div>
+
+            <!-- 2. Move to Workplace Button -->
             <div class="btn-aura-wrapper">
                 <button type="button" class="btn-action-base btn-move-workplace" id="moveWorkplaceBtn">
                     <span>Move to Workplace</span>
-                    <span class="move-table-arrow">&rarr;</span>
+                    <span class="move-table-arrow">→</span>
                 </button>
                 <div class="action-ring action-ring-blue"></div>
             </div>
         </div>
     </main>
 
-    <!-- User Directory Table Section -->
+    <!-- Right-Bottom Floating Quick Action Panel (Standalone clean buttons with highlight & scroll animation) -->
+    <div class="floating-bottom-right-panel" id="floatingPanel">
+        <button type="button" class="floating-action-btn highlight" onclick="window.location.href='{{ url_for('admin_roles') }}'">Roles Table</button>
+        <button type="button" class="floating-action-btn" onclick="window.location.href='{{ url_for('suppliers') }}'">Supplier Table</button>
+        <button type="button" class="floating-action-btn" onclick="window.location.href='{{ url_for('permissions') }}'">Permissions Table</button>
+        
+    </div>
+
+    <!-- Table Hub Section (Shown when Inventory Table is clicked) -->
+    <section class="table-section" id="tableHubSection">
+        <div class="top-navigation-bar">
+            <button type="button" class="btn-back-pill-prominent" id="closeTableHubBtn">
+                <span>← Back to Dashboard</span>
+            </button>
+        </div>
+
+        <div class="table-glass-card">
+            <div class="table-header-bar">
+                <div class="table-header-left">
+                    <h3>Database Tables Manager</h3>
+                    <p>Select and manage system tables across your inventory infrastructure</p>
+                </div>
+            </div>
+
+            <div class="user-cards-grid">
+                <div class="user-row-card grid-header" style="grid-template-columns: 2fr 1.5fr 1fr;">
+                    <div>Table Name</div>
+                    <div>Category / Status</div>
+                    <div style="text-align: right;">Actions</div>
+                </div>
+
+                <div class="user-row-card" style="grid-template-columns: 2fr 1.5fr 1fr;">
+                    <div style="font-weight: 800; color: var(--text-dark);">Main Inventory Table</div>
+                    <div><span class="role-badge role-admin">Active Ledger</span></div>
+                    <div style="text-align: right;">
+                        <div class="action-btn-group">
+                            <button type="button" class="btn-view-usr" onclick="window.location.href='{{ url_for('home') }}'">Use</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-row-card" style="grid-template-columns: 2fr 1.5fr 1fr;">
+                    <div style="font-weight: 800; color: var(--text-dark);">Roles Matrix Table</div>
+                    <div><span class="role-badge role-admin">Auth System</span></div>
+                    <div style="text-align: right;">
+                        <div class="action-btn-group">
+                            <button type="button" class="btn-view-usr" onclick="window.location.href='{{ url_for('admin_roles') }}'">Use</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-row-card" style="grid-template-columns: 2fr 1.5fr 1fr;">
+                    <div style="font-weight: 800; color: var(--text-dark);">Supplier Directory Table</div>
+                    <div><span class="role-badge role-admin">Supply Chain</span></div>
+                    <div style="text-align: right;">
+                        <div class="action-btn-group">
+                            <button type="button" class="btn-view-usr" onclick="window.location.href='{{ url_for('suppliers') }}'">Use</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-row-card" style="grid-template-columns: 2fr 1.5fr 1fr;">
+                    <div style="font-weight: 800; color: var(--text-dark);">Permissions Map Table</div>
+                    <div><span class="role-badge role-admin">Security Scopes</span></div>
+                    <div style="text-align: right;">
+                        <div class="action-btn-group">
+                            <button type="button" class="btn-view-usr" onclick="window.location.href='{{ url_for('permissions') }}'">Use</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modern View Users Directory -->
     <section class="table-section" id="userDirectorySection">
         <div class="top-navigation-bar">
-            <button type="button" class="btn-back-pill-prominent" id="closeTableBtn">Back</button>
+            <button type="button" class="btn-back-pill-prominent" id="closeTableBtn">
+                <span>Back</span>
+            </button>
         </div>
+
         <div class="table-glass-card">
             <div class="table-header-bar">
                 <div class="table-header-left">
                     <h3>Registered Users</h3>
                     <p>Manage workspace permissions and credential authorizations</p>
                 </div>
+
                 <div class="table-controls">
                     <input type="text" id="userSearchInput" class="table-search-input" placeholder="Search by name, username...">
-                    <div class="role-filter-group" id="roleFilterGroup">
-                        <button type="button" class="role-filter-btn active" data-filter="ALL">All Roles</button>
-                        <button type="button" class="role-filter-btn" data-filter="Admin">Admin</button>
-                        <button type="button" class="role-filter-btn" data-filter="Manager">Manager</button>
-                        <button type="button" class="role-filter-btn" data-filter="Supervisor">Supervisor</button>
-                    </div>
                 </div>
             </div>
+
             <div class="user-cards-grid" id="userCardsContainer">
                 <div class="user-row-card grid-header">
-                    <div>User Profile</div><div>Username</div><div>Assigned Role</div>
-                    <div>Account Status</div><div style="text-align:right;">Actions</div>
+                    <div>User Profile</div>
+                    <div>Username</div>
+                    <div>Role & ID (Clear View)</div>
+                    <div>Account Status</div>
+                    <div style="text-align: right;">Actions</div>
                 </div>
                 <div id="userRowsTarget"></div>
             </div>
         </div>
     </section>
 
-    <!-- Modal: Add User -->
+    <!-- Modal 1: Add New User (With clear Role selection dropdown & fixed password eye) -->
     <div class="modal-overlay" id="addModal" aria-hidden="true">
         <div class="modal-card">
             <div class="modal-header">
                 <h3>+ Add New User</h3>
-                <button type="button" class="modal-close-btn" data-close="addModal">&times;</button>
+                <button type="button" class="modal-close-btn" data-close="addModal">×</button>
             </div>
             <form id="addUserForm">
                 <div class="modal-body">
-                    <div class="form-field"><label for="addUsername">Username</label><input type="text" id="addUsername" class="field-input-box" placeholder="e.g. rahul_ops" required></div>
-                    <div class="form-field"><label for="addEmail">Email</label><input type="email" id="addEmail" class="field-input-box" placeholder="rahul@company.com" required></div>
+                    <div class="form-field">
+                        <label for="addFullName">Full Name</label>
+                        <input type="text" id="addFullName" class="field-input-box" placeholder="e.g. Rahul Sharma" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="addUsername">Username</label>
+                        <input type="text" id="addUsername" class="field-input-box" placeholder="e.g. rahul_ops" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="addEmail">Email</label>
+                        <input type="email" id="addEmail" class="field-input-box" placeholder="rahul@company.com" required>
+                    </div>
+
                     <div class="form-field">
                         <label for="addPassword">Password</label>
                         <div class="password-input-wrap">
                             <input type="password" id="addPassword" class="field-input-box" placeholder="••••••••" required>
-                            <button type="button" class="toggle-eye" onclick="togglePass('addPassword')">&#128065;</button>
+                            <button type="button" class="toggle-eye" onclick="togglePass('addPassword')">👁</button>
                         </div>
                     </div>
+
                     <div class="form-field">
-                        <label>Select Role Permission</label>
-                        <input type="hidden" id="addRoleVal" value="Manager">
-                        <div class="role-cards-container" id="addRoleCards">
-                            <div class="role-choice-card" data-role="Admin" onclick="selectRoleChoice('add','Admin')"><span class="role-choice-title">Admin</span><span class="role-choice-desc">Full Control</span></div>
-                            <div class="role-choice-card selected-manager" data-role="Manager" onclick="selectRoleChoice('add','Manager')"><span class="role-choice-title">Manager</span><span class="role-choice-desc">Operations</span></div>
-                            <div class="role-choice-card" data-role="Supervisor" onclick="selectRoleChoice('add','Supervisor')"><span class="role-choice-title">Supervisor</span><span class="role-choice-desc">Audit &amp; View</span></div>
-                        </div>
+                        <label for="addRoleInteger">Assign Role (Type Role Number)</label>
+                        <input type="text" id="addRoleInteger" class="field-input-box" inputmode="numeric" pattern="[0-9]+" placeholder="e.g. 4" list="addRoleOptions" autocomplete="off" required>
+                        <datalist id="addRoleOptions"></datalist>
+                        <p id="addRoleSelection" style="margin: 0; font-size: 12px; color: #0f766e; font-weight: 700;"></p>
+                        <p id="addRoleHint" style="margin: 0; font-size: 12px; color: #64748b;">Loading role codes…</p>
                     </div>
                 </div>
-                <p id="addUserError" class="message" style="color:#ea2330; font-size:12px; margin:0 24px;"></p>
+
                 <div class="modal-footer">
                     <button type="button" class="btn-modal-cancel" data-close="addModal">Cancel</button>
-                    <button type="submit" class="btn-modal-submit-red" id="createUserBtn">Create User</button>
+                    <button type="submit" class="btn-modal-submit-red">Create User</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal: View Details -->
+    <!-- Modal 3: View Details Inspector -->
     <div class="modal-overlay" id="viewModal" aria-hidden="true">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>&#128065; User Details Inspector</h3>
-                <button type="button" class="modal-close-btn" data-close="viewModal">&times;</button>
+                <h3>👁 User Details Inspector</h3>
+                <button type="button" class="modal-close-btn" data-close="viewModal">×</button>
             </div>
             <div class="modal-body">
                 <div class="detail-row"><span class="detail-key">Full Name</span><span class="detail-val" id="viewName">-</span></div>
                 <div class="detail-row"><span class="detail-key">Username</span><span class="detail-val" id="viewUsername">-</span></div>
                 <div class="detail-row"><span class="detail-key">Email</span><span class="detail-val" id="viewEmail">-</span></div>
-                <div class="detail-row"><span class="detail-key">Role</span><span class="detail-val" id="viewRole">-</span></div>
+                <div class="detail-row"><span class="detail-key">Assigned Role</span><span class="detail-val" id="viewRole">-</span></div>
                 <div class="detail-row"><span class="detail-key">Account Status</span><span class="detail-val" id="viewStatus">-</span></div>
-
-                <div class="form-field" id="viewRoleEditor">
-                    <label>Change Role Permission</label>
-                    <input type="hidden" id="updateRoleVal" value="Manager">
-                    <div class="role-cards-container" id="updateRoleCards">
-                        <div class="role-choice-card" data-role="Admin" onclick="selectRoleChoice('update','Admin')"><span class="role-choice-title">Admin</span><span class="role-choice-desc">Full Control</span></div>
-                        <div class="role-choice-card" data-role="Manager" onclick="selectRoleChoice('update','Manager')"><span class="role-choice-title">Manager</span><span class="role-choice-desc">Operations</span></div>
-                        <div class="role-choice-card" data-role="Supervisor" onclick="selectRoleChoice('update','Supervisor')"><span class="role-choice-title">Supervisor</span><span class="role-choice-desc">Audit &amp; View</span></div>
-                    </div>
-                </div>
-                <p class="message" id="updateUserError"></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-modal-cancel" data-close="viewModal">Close</button>
-                <button type="button" class="btn-modal-submit-red" id="saveUserBtn">Save Changes</button>
             </div>
         </div>
     </div>
@@ -183,362 +261,359 @@
         <div class="footer-top">
             <h2 class="footer-main-title">Design by Artham</h2>
             <a href="https://instagram.com/designwithartham" target="_blank" class="footer-social-link">
-                <span class="insta-icon-box">&#9825;</span><span>@designwithartham</span>
+                <span class="insta-icon-box">♡</span>
+                <span>@designwithartham</span>
             </a>
         </div>
         <div class="footer-divider"></div>
-        <div class="footer-columns">
-            <div class="footer-col">
-                <h3>About Us</h3>
-                <ul><li><a href="#">Our Story</a></li><li><a href="#">Careers</a></li><li><a href="#">What We Offer</a></li></ul>
-                <p class="footer-tagline">Crafting unscripted moments that turn strangers into a tribe.</p>
-            </div>
-            <div class="footer-col">
-                <h3>Terms &amp; Info</h3>
-                <ul><li><a href="#">Disclaimer</a></li><li><a href="#">Terms &amp; Conditions</a></li><li><a href="#">Privacy</a></li></ul>
-            </div>
-        </div>
         <div class="footer-bottom-bar">
-            <div class="footer-bottom-left"><span class="footer-brand-mini">SMOभर</span><span>&copy; 2026 SAFARNAMA. All Rights Reserved.</span></div>
-            <div class="footer-bottom-right"><span>&#127760; ENG &middot; INR</span></div>
+            <div class="footer-bottom-left">
+                <span class="footer-brand-mini">SMOभर</span>
+                <span>© 2026 SAFARNAMA. All Rights Reserved.</span>
+            </div>
         </div>
     </footer>
 
     <div class="toast-notice" id="toastNotice">Action Completed Successfully</div>
 
     <script>
-        // ── Auth guard ──
-        if (!sessionStorage.getItem("session_token")) {
-            window.location.href = "{{ url_for('login') }}";
-        }
-
-        // Water ripple
+        // Enforce Admin Authentication
+        (async function initAdminAuth() {
+            const token = localStorage.getItem("smobhar_session_token");
+            if (!token) {
+                window.location.href = "{{ url_for('login') }}";
+                return;
+            }
+            try {
+                const res = await fetch("/api/auth/me", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                if (!res.ok) {
+                    localStorage.removeItem("smobhar_session_token");
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+                const user = await res.json();
+                if (user.role_id !== 1) {
+                    window.location.href = "{{ url_for('home') }}";
+                }
+            } catch (err) {}
+        })();
         const smokePattern = document.getElementById("smokePattern");
         const turbulence = document.getElementById("waterTurbulence");
+
         window.addEventListener("mousemove", (e) => {
             smokePattern.style.setProperty("--mouse-x", e.clientX + "px");
             smokePattern.style.setProperty("--mouse-y", e.clientY + "px");
         });
+
         let frame = 0;
         function animateWater() {
             frame += 0.008;
-            turbulence.setAttribute("baseFrequency", `${0.015+Math.sin(frame)*0.003} ${0.018+Math.cos(frame*0.8)*0.003}`);
+            turbulence.setAttribute("baseFrequency", `${0.015 + Math.sin(frame) * 0.003} ${0.018 + Math.cos(frame * 0.8) * 0.003}`);
             requestAnimationFrame(animateWater);
         }
         animateWater();
 
-        function showToast(msg) { const t = document.getElementById("toastNotice"); t.textContent = msg; t.style.display = "block"; setTimeout(() => { t.style.display = "none"; }, 3000); }
-        function togglePass(id) { const i = document.getElementById(id); i.type = i.type === "password" ? "text" : "password"; }
+        // State & Auth Helpers
+        let users = [];
+        let roles = [];
+        let roleMap = {};
+        let roleDisplayMap = {};
 
-        // ── User data — tries API first, falls back to localStorage ──
-        const ROLE_NAMES = { 1: "Admin", 2: "Manager", 3: "Supervisor" };
-        const ROLE_IDS = { Admin: 1, Manager: 2, Supervisor: 3 };
-
-        function authHeader() {
-            return { "Authorization": "Bearer " + sessionStorage.getItem("session_token"), "Content-Type": "application/json" };
+        function getRoleDisplayNumber(roleId) {
+            const index = roles.findIndex(r => r.role_id === roleId);
+            return index >= 0 ? index + 1 : roleId;
         }
 
-        async function fetchUsersFromAPI() {
+        function getAuthHeaders() {
+            const token = localStorage.getItem("smobhar_session_token");
+            const headers = { "Content-Type": "application/json" };
+            if (token) headers["Authorization"] = "Bearer " + token;
+            return headers;
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById("toastNotice");
+            toast.textContent = msg;
+            toast.style.background = isError ? "#ef4444" : "#10b981";
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; }, 3500);
+        }
+
+        function getRoleLabel(roleId) {
+            const id = parseInt(roleId);
+            const displayId = getRoleDisplayNumber(id);
+            return roleMap[id] ? `${roleMap[id]} (${displayId})` : `Role (${displayId})`;
+        }
+
+        // Scroll Animation Logic for Right-Bottom Highlighted Buttons
+        let lastScrollTop = 0;
+        const floatingPanel = document.getElementById("floatingPanel");
+
+        window.addEventListener("scroll", () => {
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if (scrollTop > lastScrollTop && scrollTop > 40) {
+                floatingPanel.classList.add("hidden");
+            } else {
+                floatingPanel.classList.remove("hidden");
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        }, false);
+
+        // Fetch Roles & Users from Backend API
+        async function loadRoles() {
             try {
-                const res = await fetch("/api/users", { headers: authHeader() });
-                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return null; }
-                if (!res.ok) return null;
-                const data = await res.json();
-                // Normalise to match local user shape
-                return data.map(u => ({
-                    name: u.username,
-                    username: u.username,
-                    email: u.email || "",
-                    role: ROLE_NAMES[u.role_id] || "User",
-                    role_id: u.role_id,
-                    status: "Active",
-                    user_id: u.user_id,
-                }));
-            } catch { return null; }
+                const res = await fetch("/api/roles", { headers: getAuthHeaders() });
+                if (res.ok) {
+                    roles = await res.json();
+                    roleMap = {};
+                    roleDisplayMap = {};
+                    const datalist = document.getElementById("addRoleOptions");
+                    const hint = document.getElementById("addRoleHint");
+                    datalist.innerHTML = "";
+                    roles.forEach((r, index) => {
+                        const displayId = index + 1;
+                        roleMap[r.role_id] = r.role_name;
+                        roleDisplayMap[displayId] = r.role_id;
+                        const opt = document.createElement("option");
+                        opt.value = String(displayId);
+                        opt.label = `${displayId} - ${r.role_name}`;
+                        datalist.appendChild(opt);
+                    });
+                    hint.textContent = roles.length
+                        ? "Available role numbers: " + roles.map((r, index) => `${index + 1} = ${r.role_name}`).join(" · ")
+                        : "No roles available.";
+                }
+            } catch (err) {
+                console.warn("Could not load roles:", err);
+            }
         }
 
-        // Local store (fallback / admin-panel-only additions)
-        const defaultUsers = [
-            { name:"Artham Tyagi", username:"artham_admin", email:"tyagiartham31@gmail.com", role:"Admin", status:"Active" },
-            { name:"Krishna Tyagi", username:"krishna_dev", email:"tyagikrishna1234@gmail.com", role:"Admin", status:"Active" },
-        ];
+        document.getElementById("addRoleInteger").addEventListener("input", (e) => {
+            const displayId = parseInt(e.target.value.trim(), 10);
+            const actualRoleId = roleDisplayMap[displayId];
+            const selection = document.getElementById("addRoleSelection");
+            selection.textContent = actualRoleId
+                ? `Selected: ${displayId} — ${roleMap[actualRoleId]} (role number ${displayId})`
+                : "";
+        });
 
-        function getLocalUsers() {
-            const d = localStorage.getItem("smobhar_admin_users");
-            if (!d) { localStorage.setItem("smobhar_admin_users", JSON.stringify(defaultUsers)); return defaultUsers; }
-            try { return JSON.parse(d).map(u=>({status:"Active",...u})); } catch { return defaultUsers; }
+        async function loadUsers() {
+            try {
+                const res = await fetch("/api/users", { headers: getAuthHeaders() });
+                if (res.status === 401) {
+                    localStorage.removeItem("smobhar_session_token");
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+                if (res.ok) {
+                    users = await res.json();
+                    renderUsers();
+                } else {
+                    const err = await res.json();
+                    showToast(err.description || "Failed to load users.", true);
+                }
+            } catch (err) {
+                showToast("Connection error fetching users.", true);
+            }
         }
-        function saveLocalUsers(u) { localStorage.setItem("smobhar_admin_users", JSON.stringify(u)); }
 
-        let _cachedUsers = null;
-
-        async function getUsers() {
-            if (_cachedUsers) return _cachedUsers;
-            const apiUsers = await fetchUsersFromAPI();
-            _cachedUsers = apiUsers || getLocalUsers();
-            return _cachedUsers;
-        }
-
-        function saveUsers(u) {
-            _cachedUsers = u;
-            saveLocalUsers(u);
-            renderUsers();
-        }
-
-        // Trigger initial render
-        getUsers().then(() => renderUsers());
-
-        let currentRoleFilter = "ALL";
-
-        async function renderUsers() {
-            const users = await getUsers();
+        function renderUsers() {
             const target = document.getElementById("userRowsTarget");
-            const search = document.getElementById("userSearchInput").value.toLowerCase();
+            const search = document.getElementById("userSearchInput").value.trim().toLowerCase();
             target.innerHTML = "";
-            const filtered = users.filter(u => {
-                const matchSearch = u.name.toLowerCase().includes(search) || u.username.toLowerCase().includes(search) || u.email.toLowerCase().includes(search);
-                const matchRole = currentRoleFilter === "ALL" || u.role === currentRoleFilter;
-                return matchSearch && matchRole;
-            });
-            if (filtered.length === 0) { target.innerHTML = `<div style="text-align:center;padding:32px;color:#64748b;font-weight:600;">No matching users found.</div>`; return; }
-            filtered.forEach(user => {
+
+            const filtered = users.filter(u =>
+                (u.username && u.username.toLowerCase().includes(search)) ||
+                (u.email && u.email.toLowerCase().includes(search))
+            );
+
+            if (filtered.length === 0) {
+                target.innerHTML = `<div style="text-align:center; padding:32px; color:#64748b; font-weight:600;">No matching registered users found.</div>`;
+                return;
+            }
+
+            filtered.forEach((user) => {
                 const div = document.createElement("div");
                 div.className = "user-row-card";
-                const roleClass = user.role === "Admin" ? "role-admin" : user.role === "Supervisor" ? "role-supervisor" : "role-manager";
-                const isActive = user.status !== "Inactive";
+                const initial = (user.username || "U").charAt(0).toUpperCase();
+                const roleBadgeClass = user.role_id === 1 ? "role-admin" : "role-custom";
+
                 div.innerHTML = `
                     <div class="user-meta-cell">
-                        <div class="user-avatar">${user.name.charAt(0).toUpperCase()}</div>
-                        <div><div class="user-name-title">${user.name}</div><div class="user-sub-email">${user.email}</div></div>
+                        <div class="user-avatar">${initial}</div>
+                        <div>
+                            <div class="user-name-title">${user.username}</div>
+                            <div class="user-sub-email">${user.email}</div>
+                        </div>
                     </div>
                     <div><span class="username-tag">@${user.username}</span></div>
-                    <div><span class="role-badge ${roleClass}">${user.role}</span></div>
+                    <div><span class="role-badge ${roleBadgeClass}">${getRoleLabel(user.role_id)}</span></div>
                     <div>
-                        <button type="button" class="status-pill-btn ${isActive?'active-status':'inactive-status'}" onclick="toggleUserStatus('${user.username}')">
-                            <span class="status-dot ${isActive?'status-dot-active':'status-dot-inactive'}"></span>
-                            <span>${isActive?'Active':'Inactive'}</span>
+                        <button type="button" class="status-pill-btn active-status">
+                            <span class="status-dot status-dot-active"></span>
+                            <span>Active</span>
                         </button>
                     </div>
-                    <div><div class="action-btn-group">
-                        <button type="button" class="btn-view-usr" onclick="viewUser('${user.username}')">&#128065; View</button>
-                        <button type="button" class="btn-del-usr" onclick="deleteUser('${user.username}')">&#128465; Delete</button>
-                    </div></div>`;
+                    <div>
+                        <div class="action-btn-group">
+                            <button type="button" class="btn-view-usr" onclick="viewUser(${user.user_id})">👁 View</button>
+                            <button type="button" class="btn-del-usr" onclick="deleteUser(${user.user_id}, '${user.username}')">🗑 Delete</button>
+                        </div>
+                    </div>
+                `;
                 target.appendChild(div);
             });
         }
 
-        async function toggleUserStatus(username) {
-            const users = await getUsers();
-            const idx = users.findIndex(u => u.username === username);
-            if (idx === -1) return;
-            users[idx].status = users[idx].status === "Active" ? "Inactive" : "Active";
-            saveUsers(users);
-            showToast(`@${username} is now ${users[idx].status}.`);
+        document.getElementById("userSearchInput").addEventListener("input", renderUsers);
+
+        // Navigation Sections
+        const heroStage = document.getElementById("heroStage");
+        const tableHubSection = document.getElementById("tableHubSection");
+        const userDirectorySection = document.getElementById("userDirectorySection");
+
+        function openTableHub() {
+            heroStage.classList.add("hide-stage");
+            userDirectorySection.classList.remove("active");
+            tableHubSection.classList.add("active");
+            tableHubSection.scrollIntoView({ behavior: "smooth" });
         }
 
-        let viewingUserId = null;
+        document.getElementById("openTableHubBtn").addEventListener("click", openTableHub);
 
-        async function viewUser(username) {
-            const users = await getUsers();
-            const user = users.find(u => u.username === username);
-            if (!user) return;
-            viewingUserId = user.user_id ?? null;
-            document.getElementById("viewName").textContent = user.name;
-            document.getElementById("viewUsername").textContent = user.username;
-            document.getElementById("viewEmail").textContent = user.email;
-            document.getElementById("viewRole").textContent = user.role;
-            document.getElementById("viewStatus").textContent = user.status;
-
-            const errEl = document.getElementById("updateUserError");
-            errEl.textContent = ""; errEl.className = "message";
-
-            const editor = document.getElementById("viewRoleEditor");
-            const saveBtn = document.getElementById("saveUserBtn");
-            const isSelf = String(viewingUserId) === sessionStorage.getItem("user_id");
-            const editable = viewingUserId != null && !isSelf;
-            editor.style.display = editable ? "" : "none";
-            saveBtn.style.display = editable ? "" : "none";
-            if (editable) selectRoleChoice("update", user.role);
-            openModal("viewModal");
-        }
-
-        document.getElementById("saveUserBtn").addEventListener("click", async () => {
-            if (viewingUserId == null) return;
-            const errEl = document.getElementById("updateUserError");
-            const btn = document.getElementById("saveUserBtn");
-            const role = document.getElementById("updateRoleVal").value;
-            const role_id = ROLE_IDS[role];
-            if (role_id == null) { errEl.textContent = "Select a role first."; errEl.className = "message error"; return; }
-
-            errEl.textContent = ""; errEl.className = "message";
-            btn.disabled = true;
-            try {
-                const res = await fetch(`/api/admin/users/${viewingUserId}`, {
-                    method: "PUT",
-                    headers: authHeader(),
-                    body: JSON.stringify({ role_id })
-                });
-                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return; }
-                if (res.status === 403) { errEl.textContent = "You do not have permission to update users."; errEl.className = "message error"; return; }
-                if (res.status === 404) { errEl.textContent = "User not found. They may have been deleted."; errEl.className = "message error"; refreshUsers(); return; }
-                if (!res.ok) { errEl.textContent = await errorDescription(res, "Could not update this user."); errEl.className = "message error"; return; }
-
-                const saved = await res.json();
-                showToast(`@${saved.username} is now ${ROLE_NAMES[saved.role_id] || saved.role_id}.`);
-                closeModal("viewModal");
-                refreshUsers();
-            } catch {
-                errEl.textContent = "Network error."; errEl.className = "message error";
-            } finally {
-                btn.disabled = false;
-            }
+        document.getElementById("closeTableHubBtn").addEventListener("click", () => {
+            heroStage.classList.remove("hide-stage");
+            tableHubSection.classList.remove("active");
+            window.scrollTo({ top: 0, behavior: "smooth" });
         });
 
-        async function errorDescription(res, fallback) {
-            const d = await res.json().catch(() => ({}));
-            return d.description || fallback;
-        }
+        const openViewUsersBtn = document.getElementById("openViewUsersBtn");
+        openViewUsersBtn.addEventListener("click", async () => {
+            await loadUsers();
+            heroStage.classList.add("hide-stage");
+            tableHubSection.classList.remove("active");
+            userDirectorySection.classList.add("active");
+            userDirectorySection.scrollIntoView({ behavior: "smooth" });
+        });
 
-        function refreshUsers() {
-            _cachedUsers = null;
-            return getUsers().then(() => renderUsers());
-        }
+        document.getElementById("closeTableBtn").addEventListener("click", () => {
+            heroStage.classList.remove("hide-stage");
+            userDirectorySection.classList.remove("active");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
 
-        async function deleteUser(username) {
-            const users = await getUsers();
-            const user = users.find(u => u.username === username);
-            if (!user) { showToast("User not found. They may have already been deleted."); refreshUsers(); return; }
-            if (!confirm(`Delete user @${username}?`)) return;
+        document.getElementById("moveWorkplaceBtn").addEventListener("click", () => {
+            showToast("Opening Workplace Canvas...");
+            setTimeout(() => { window.location.href = "{{ url_for('workspace') }}"; }, 450);
+        });
 
-            // Users that only exist in the localStorage fallback have no user_id.
-            if (user.user_id == null) {
-                saveUsers(users.filter(u => u.username !== username));
-                showToast(`@${username} deleted.`);
+        function openModal(id) { document.getElementById(id).classList.add("active"); }
+        function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+        document.querySelectorAll("[data-close]").forEach(btn => {
+            btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close")));
+        });
+
+        document.getElementById("openAddModalBtn").addEventListener("click", () => {
+            document.getElementById("addUserForm").reset();
+            document.getElementById("addRoleSelection").textContent = "";
+            openModal("addModal");
+        });
+
+        // Add User Form Submission (POST /api/admin/users)
+        document.getElementById("addUserForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("addUsername").value.trim();
+            const email = document.getElementById("addEmail").value.trim().toLowerCase();
+            const password = document.getElementById("addPassword").value;
+            const roleValue = document.getElementById("addRoleInteger").value.trim();
+            const displayNumber = parseInt(roleValue, 10);
+            const role_id = roleDisplayMap[displayNumber];
+
+            if (!Number.isInteger(displayNumber) || !role_id) {
+                showToast("Enter a valid role number (see the available roles below the field).", true);
                 return;
             }
 
             try {
-                const res = await fetch("/api/admin/users/" + user.user_id, { method: "DELETE", headers: authHeader() });
-                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return; }
-                if (res.status === 403) { showToast(await errorDescription(res, "You do not have permission to delete users.")); return; }
-                if (res.status === 404) { showToast("User not found. They may have already been deleted."); refreshUsers(); return; }
-                if (!res.ok) { showToast(await errorDescription(res, "Could not delete this user.")); return; }
-                showToast(`@${username} deleted!`);
-                refreshUsers();
-            } catch {
-                showToast("Could not reach the server. Please try again.");
-            }
-        }
-
-        document.querySelectorAll(".role-filter-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                document.querySelectorAll(".role-filter-btn").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active"); currentRoleFilter = btn.dataset.filter; renderUsers();
-            });
-        });
-
-        function selectRoleChoice(context, role) {
-            const containerId = context === "add" ? "addRoleCards" : "updateRoleCards";
-            const hiddenId = context === "add" ? "addRoleVal" : "updateRoleVal";
-            document.getElementById(containerId).querySelectorAll(".role-choice-card").forEach(card => {
-                card.classList.remove("selected-admin","selected-manager","selected-supervisor");
-                if (card.dataset.role === role) card.classList.add(`selected-${role.toLowerCase()}`);
-            });
-            document.getElementById(hiddenId).value = role;
-        }
-
-        function openModal(id) { const m = document.getElementById(id); m.classList.add("active"); m.setAttribute("aria-hidden","false"); }
-        function closeModal(id) { const m = document.getElementById(id); m.classList.remove("active"); m.setAttribute("aria-hidden","true"); }
-
-        document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close"))));
-        document.querySelectorAll(".modal-overlay").forEach(o => o.addEventListener("click", (e) => { if (e.target === o) closeModal(o.id); }));
-
-        document.getElementById("openAddModalBtn").addEventListener("click", () => { document.getElementById("addUserForm").reset(); selectRoleChoice('add','Manager'); openModal("addModal"); });
-        document.getElementById("addUserForm").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const errEl = document.getElementById("addUserError");
-            const btn = document.getElementById("createUserBtn");
-            const username = document.getElementById("addUsername").value.trim().toLowerCase();
-            const email = document.getElementById("addEmail").value.trim().toLowerCase();
-            const password = document.getElementById("addPassword").value;
-            const role = document.getElementById("addRoleVal").value || "Manager";
-            errEl.textContent = "";
-
-            btn.disabled = true;
-            try {
                 const res = await fetch("/api/admin/users", {
                     method: "POST",
-                    headers: authHeader(),
-                    body: JSON.stringify({ username, email, password, role_id: ROLE_IDS[role] ?? 2 })
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ username, email, password, role_id })
                 });
-                if (res.status === 401) { sessionStorage.clear(); window.location.href = "{{ url_for('login') }}"; return; }
-                if (res.status === 403) { errEl.textContent = "You do not have permission to create users."; return; }
-                if (res.status === 409) { errEl.textContent = "This username already exists. Choose a unique one."; return; }
-                if (!res.ok) { errEl.textContent = await errorDescription(res, "Could not create this user. Please check the values."); return; }
 
-                showToast(`User @${username} added!`);
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.description || data.error || "Failed to create user.", true);
+                    return;
+                }
+
                 closeModal("addModal");
-                refreshUsers();
-            } catch {
-                errEl.textContent = "Could not reach the server. Please try again.";
-            } finally {
-                btn.disabled = false;
+                showToast(`User @${username} created successfully!`);
+                await loadUsers();
+            } catch (err) {
+                showToast("Connection error creating user.", true);
             }
         });
 
-        document.getElementById("moveWorkplaceBtn").addEventListener("click", () => { showToast("Opening Workplace..."); setTimeout(() => { window.location.href = "{{ url_for('workspace') }}"; }, 450); });
+        // View User Inspector
+        function viewUser(userId) {
+            const user = users.find(u => u.user_id === userId);
+            if (!user) return;
+            document.getElementById("viewName").textContent = user.username;
+            document.getElementById("viewUsername").textContent = "@" + user.username;
+            document.getElementById("viewEmail").textContent = user.email;
+            document.getElementById("viewRole").textContent = getRoleLabel(user.role_id);
+            document.getElementById("viewStatus").textContent = "Active (Registered " + (user.created_at || "N/A").split("T")[0] + ")";
+            openModal("viewModal");
+        }
 
-        const openViewUsersBtn = document.getElementById("openViewUsersBtn");
-        const heroStage = document.getElementById("heroStage");
-        const userDirectorySection = document.getElementById("userDirectorySection");
-        const closeTableBtn = document.getElementById("closeTableBtn");
+        // Delete User (DELETE /api/admin/users/<id>)
+        async function deleteUser(userId, username) {
+            if (!confirm(`Are you sure you want to delete user @${username}?`)) return;
 
-        openViewUsersBtn.addEventListener("click", () => { renderUsers(); openViewUsersBtn.classList.add("highlighted"); heroStage.classList.add("hide-stage"); userDirectorySection.classList.add("active"); userDirectorySection.scrollIntoView({behavior:"smooth"}); });
-        closeTableBtn.addEventListener("click", () => { openViewUsersBtn.classList.remove("highlighted"); heroStage.classList.remove("hide-stage"); userDirectorySection.classList.remove("active"); window.scrollTo({top:0,behavior:"smooth"}); });
-        document.getElementById("userSearchInput").addEventListener("input", renderUsers);
+            try {
+                const res = await fetch(`/api/admin/users/${userId}`, {
+                    method: "DELETE",
+                    headers: getAuthHeaders()
+                });
+
+                if (!res.ok && res.status !== 204) {
+                    const data = await res.json();
+                    showToast(data.description || data.error || "Cannot delete user.", true);
+                    return;
+                }
+
+                showToast(`User @${username} deleted successfully!`);
+                await loadUsers();
+            } catch (err) {
+                showToast("Connection error deleting user.", true);
+            }
+        }
+
+        function togglePass(id) {
+            const input = document.getElementById(id);
+            input.type = input.type === "password" ? "text" : "password";
+        }
 
         document.getElementById("logoutBtn").addEventListener("click", async () => {
-            const t = sessionStorage.getItem("session_token");
-            if (t) { try { await fetch("/api/auth/logout", { method:"POST", headers:{"Authorization":"Bearer "+t} }); } catch {} }
+            const token = localStorage.getItem("smobhar_session_token");
+            try {
+                await fetch("/api/auth/logout", {
+                    method: "POST",
+                    headers: token ? { "Authorization": "Bearer " + token } : {}
+                });
+            } catch (e) {}
+            localStorage.removeItem("smobhar_session_token");
             sessionStorage.clear();
             window.location.href = "{{ url_for('login') }}";
         });
 
-        // ── Admin gate (Strict enforcement for Issue #14) ──
-        async function enforceAdminAccess() {
-            let perms = [];
-            try {
-                const res = await fetch("/api/auth/me", { headers: authHeader() });
-                if (res.status === 401) {
-                    sessionStorage.clear();
-                    window.location.href = "{{ url_for('login') }}";
-                    return;
-                }
-                if (res.ok) perms = (await res.json()).permissions || [];
-            } catch {
-                sessionStorage.clear();
-                window.location.href = "{{ url_for('login') }}";
-                return;
-            }
-
-            if (perms.includes("ADMIN")) return;
-
-            // Non-admin user: Block access completely and show friendly 403 screen
-            if (heroStage) heroStage.style.display = "none";
-            if (userDirectorySection) userDirectorySection.style.display = "none";
-            const deniedCard = document.getElementById("accessDeniedCard");
-            if (deniedCard) deniedCard.style.display = "block";
-
-            const deniedLogout = document.getElementById("deniedLogoutBtn");
-            if (deniedLogout) {
-                deniedLogout.addEventListener("click", () => {
-                    sessionStorage.clear();
-                    window.location.href = "{{ url_for('login') }}";
-                });
-            }
-        }
-
-        enforceAdminAccess();
+        // Initial Load
+        loadRoles();
+        loadUsers();
     </script>
 </body>
 </html>
