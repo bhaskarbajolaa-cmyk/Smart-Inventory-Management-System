@@ -423,6 +423,11 @@
         }
 
         // 4. Render Table
+        function hasPermission(code) {
+            const permissions = window.__permissions;
+            return !permissions || permissions.has(code);
+        }
+
         function renderTable() {
             const tbody = document.getElementById("inventoryTableBody");
             tbody.innerHTML = "";
@@ -464,6 +469,9 @@
                     `;
                 } else {
                     // Standard Row Mode
+                    const canAppend = hasPermission("APPEND");
+                    const canEdit = hasPermission("EDIT");
+                    const canDelete = hasPermission("DELETE");
                     const isLow = it.quantity <= it.reorder_level;
                     const isOut = it.quantity === 0;
                     const stockColor = isOut ? "#ef4444" : (isLow ? "#f59e0b" : "#10b981");
@@ -479,9 +487,9 @@
                         <td><span class="sup-tag">${suppliersMap[it.supplier_id] || ('SUP-' + it.supplier_id)}</span></td>
                         <td style="text-align: right;">
                             <div class="action-btn-group" style="justify-content: flex-end;">
-                                <button type="button" class="btn-icon-action btn-icon-sale" onclick="openSaleModal(${it.product_id})" title="Sell Product">🛒</button>
-                                <button type="button" class="btn-icon-action btn-icon-edit" onclick="startInlineEdit(${it.product_id})" title="Edit Item">✏️</button>
-                                <button type="button" class="btn-icon-action btn-icon-delete" onclick="deleteItem(${it.product_id})" title="Delete Item">🗑️</button>
+                                ${canAppend ? `<button type="button" class="btn-icon-action btn-icon-sale" onclick="openSaleModal(${it.product_id})" title="Sell Product">🛒</button>` : ""}
+                                ${canEdit ? `<button type="button" class="btn-icon-action btn-icon-edit" onclick="startInlineEdit(${it.product_id})" title="Edit Item">✏️</button>` : ""}
+                                ${canDelete ? `<button type="button" class="btn-icon-action btn-icon-delete" onclick="deleteItem(${it.product_id})" title="Delete Item">🗑️</button>` : ""}
                             </div>
                         </td>
                     `;
@@ -756,6 +764,12 @@
                     return;
                 }
                 const user = await res.json();
+                window.__permissions = new Set(user.permissions || []);
+                if (!hasPermission("APPEND")) {
+                    const addButton = document.getElementById("openAddProductModalBtn");
+                    if (addButton) addButton.style.display = "none";
+                }
+                if (products.length) renderTable();
                 if (user.role_id === 1) {
                     const adminLink = document.getElementById("navAdminLink");
                     if (adminLink) adminLink.style.display = "inline-flex";

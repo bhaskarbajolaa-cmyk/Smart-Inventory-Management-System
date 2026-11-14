@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 from uuid import uuid4
 
+from inventory.access_control.models import Role
 from inventory.app.main import build_application
 from inventory.app.server import create_app
 
@@ -47,6 +48,27 @@ class PageGuardTests(unittest.TestCase):
             email=f"{username}@example.com",
             password=password,
             role_id=3,
+        )
+        return username, password
+
+    def make_user_without_permissions(self) -> tuple[str, str]:
+        """Create a role with no grants and a user assigned to it."""
+        role = self.services.role_repository.save(
+            Role(
+                role_id=0,
+                role_name=f"noperm_{uuid4().hex[:8]}",
+                created_by=1,
+                is_system_default=False,
+                default_job_priority=3,
+            )
+        )
+        username = f"noperm_{uuid4().hex[:8]}"
+        password = "password123"
+        self.services.authentication.register(
+            username=username,
+            email=f"{username}@example.com",
+            password=password,
+            role_id=role.role_id,
         )
         return username, password
 
@@ -94,6 +116,40 @@ class PageGuardTests(unittest.TestCase):
         self.login(client, "admin", "admin1234")
         for path in ADMIN_PAGES:
             self.assertEqual(client.get(path).status_code, 200, path)
+
+    # -- zero permissions -------------------------------------------------
+
+    def test_user_without_permissions_sees_the_blocking_state(self) -> None:
+        username, password = self.make_user_without_permissions()
+        client = self.client()
+        self.login(client, username, password)
+
+        response = client.get("/home")
+        self.assertEqual(response.status_code, 403)
+        self.assertIn(
+            b"You currently do not have permission to access any resources. "
+            b"Please contact an administrator.",
+            response.data,
+        )
+        self.assertNotIn(b"inventoryTableBody", response.data)
+        self.assertNotIn(b"navAdminLink", response.data)
+        self.assertNotIn(b"openAddProductModalBtn", response.data)
+
+        self.assertEqual(client.get("/home.html").status_code, 403)
+        self.assertEqual(client.get("/analytics").status_code, 403)
+        self.assertEqual(client.get("/workspace").status_code, 403)
+        self.assertEqual(client.get("/workspace1").status_code, 403)
+
+    def test_user_without_permissions_cannot_read_data_through_the_api(self) -> None:
+        username, password = self.make_user_without_permissions()
+        client = self.client()
+        token = self.login(client, username, password).json["session_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        self.assertEqual(client.get("/api/products", headers=headers).status_code, 403)
+        self.assertEqual(
+            client.get("/api/analytics/overview", headers=headers).status_code, 403
+        )
 
     # -- cookie behaviour ------------------------------------------------
 

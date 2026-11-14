@@ -75,6 +75,32 @@ def admin_required(view: Callable[..., Any]) -> Callable[..., Any]:
     return wrapped
 
 
+def permission_required(code: str) -> Callable[..., Any]:
+    """Render the blocking state when the signed-in user lacks ``code``.
+
+    A user with no permissions at all also fails this check, so the table,
+    navigation and action buttons are never sent to the browser.
+    """
+
+    def decorator(view: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(view)
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
+            services, session = _authenticated_session()
+            if session is None:
+                return redirect(url_for("login"))
+            user = services.user_repository.find_by_id(session.user_id)
+            if user is None:
+                return redirect(url_for("login"))
+            role = services.role_repository.find_by_id(user.role_id)
+            if role is None or not user.has_permission(code, role):
+                return render_template("no_permissions.html", user=user), 403
+            return view(*args, **kwargs)
+
+        return wrapped
+
+    return decorator
+
+
 def register_page_routes(app: Flask) -> None:
     """Register all frontend page routes onto the Flask app."""
 
@@ -98,20 +124,20 @@ def register_page_routes(app: Flask) -> None:
 
     @app.get("/workspace")
     @app.get("/smobhar.html")
-    @login_required
+    @permission_required("VIEW")
     def workspace():
         return render_template("smobhar.html")
 
     @app.get("/smobhar1")
     @app.get("/workspace1")
     @app.get("/smobhar1.html")
-    @login_required
+    @permission_required("VIEW")
     def workspace1():
         return render_template("smobhar1.html")
 
     @app.get("/home")
     @app.get("/home.html")
-    @login_required
+    @permission_required("VIEW")
     def home():
         return render_template("home.html")
 
@@ -122,7 +148,7 @@ def register_page_routes(app: Flask) -> None:
         return render_template("about.html")
 
     @app.get("/analytics")
-    @login_required
+    @permission_required("VIEW")
     def analytics_page():
         return render_template("analytics.html")
 
