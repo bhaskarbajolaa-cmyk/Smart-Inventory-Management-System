@@ -18,6 +18,8 @@ class ProductFilter:
     min_price: Decimal | None = None
     max_price: Decimal | None = None
     search_term: str | None = None
+    limit: int | None = None
+    offset: int | None = None
 
     def matches(self, product: "Product") -> bool:
         """Check if an in-memory product satisfies all active filter criteria."""

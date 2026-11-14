@@ -996,6 +996,24 @@ def create_app(services: ApplicationServices | None = None) -> Any:
             supplier_value = request.args.get("supplier_id")
             min_price_value = request.args.get("min_price")
             max_price_value = request.args.get("max_price")
+            search_query = request.args.get("search_term") or request.args.get("q")
+            is_unpaginated = request.args.get("all", "").lower() in {"1", "true", "yes"}
+
+            page_raw = request.args.get("page")
+            page_size_raw = request.args.get("page_size") or request.args.get("limit")
+
+            page = int(page_raw) if page_raw is not None else 1
+            if page < 1:
+                page = 1
+            page_size = int(page_size_raw) if page_size_raw is not None else 10
+            if page_size < 1:
+                page_size = 10
+            elif page_size > 100:
+                page_size = 100
+
+            limit = None if is_unpaginated else page_size
+            offset = None if is_unpaginated else (page - 1) * page_size
+
             filters = ProductFilter(
                 category=request.args.get("category"),
                 supplier_id=int(supplier_value) if supplier_value else None,
@@ -1003,14 +1021,39 @@ def create_app(services: ApplicationServices | None = None) -> Any:
                 in {"1", "true", "yes"},
                 min_price=Decimal(min_price_value) if min_price_value else None,
                 max_price=Decimal(max_price_value) if max_price_value else None,
-                search_term=request.args.get("search_term"),
+                search_term=search_query,
+                limit=limit,
+                offset=offset,
             )
         except (InvalidOperation, ValueError):
-            abort(400, description="Invalid product filter value.")
+            abort(400, description="Invalid product filter or pagination value.")
 
-        products = services.product_repository.find_all(filters)
-        response = jsonify([product_payload(product) for product in products])
-        response.headers["X-Cache"] = getattr(services.product_repository, "last_cache_status", "MISS")
+        if is_unpaginated:
+            products = services.product_repository.find_all(filters)
+            response = jsonify([product_payload(product) for product in products])
+        else:
+            import math
+
+            total_items = services.product_repository.count(filters)
+            total_pages = math.ceil(total_items / page_size) if total_items > 0 else 1
+            products = services.product_repository.find_all(filters)
+            response = jsonify(
+                {
+                    "items": [product_payload(product) for product in products],
+                    "pagination": {
+                        "page": page,
+                        "page_size": page_size,
+                        "total_items": total_items,
+                        "total_pages": total_pages,
+                        "has_next": page < total_pages,
+                        "has_prev": page > 1,
+                    },
+                }
+            )
+
+        response.headers["X-Cache"] = getattr(
+            services.product_repository, "last_cache_status", "MISS"
+        )
         return response
 
     @app.get("/api/suppliers")

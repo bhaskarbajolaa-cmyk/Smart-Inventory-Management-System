@@ -82,8 +82,52 @@ class ProductRepository(Repository[Product, ProductFilter]):
             sql += " WHERE " + " AND ".join(conditions)
 
         sql += " ORDER BY product_id ASC"
+
+        if filters is not None:
+            if filters.limit is not None:
+                sql += " LIMIT ?"
+                params.append(filters.limit)
+                if filters.offset is not None:
+                    sql += " OFFSET ?"
+                    params.append(filters.offset)
+            elif filters.offset is not None:
+                sql += " LIMIT -1 OFFSET ?"
+                params.append(filters.offset)
+
         rows = self.db.execute_query(sql, params)
         return [self._row_to_product(row) for row in rows]
+
+    def count(self, filters: ProductFilter | None = None) -> int:
+        """Count products matching every active filter (ignoring limit and offset)."""
+        sql = "SELECT COUNT(*) AS total FROM products"
+        conditions: list[str] = []
+        params: list[Any] = []
+
+        if filters is not None:
+            if filters.category is not None:
+                conditions.append("LOWER(category) = LOWER(?)")
+                params.append(filters.category)
+            if filters.supplier_id is not None:
+                conditions.append("supplier_id = ?")
+                params.append(filters.supplier_id)
+            if filters.low_stock_only:
+                conditions.append("quantity <= reorder_level")
+            if filters.min_price is not None:
+                conditions.append("CAST(unit_price AS REAL) >= ?")
+                params.append(float(filters.min_price))
+            if filters.max_price is not None:
+                conditions.append("CAST(unit_price AS REAL) <= ?")
+                params.append(float(filters.max_price))
+            if filters.search_term is not None and filters.search_term.strip():
+                term = f"%{filters.search_term.strip()}%"
+                conditions.append("(name LIKE ? OR sku LIKE ?)")
+                params.extend([term, term])
+
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+
+        rows = self.db.execute_query(sql, params)
+        return int(rows[0]["total"]) if rows else 0
 
     def find_low_stock(self) -> list[Product]:
         """Return products whose quantities are at or below reorder levels."""

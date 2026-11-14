@@ -44,7 +44,18 @@ class CachedProductRepository:
         self.cache.put_product(product)
         return product
 
+    def count(self, filters: ProductFilter | None = None) -> int:
+        return self.repository.count(filters)
+
     def find_all(self, filters: ProductFilter | None = None) -> list[Product]:
+        if filters is not None and (filters.limit is not None or filters.offset is not None):
+            res_products = self.repository.find_all(filters)
+            for product in res_products:
+                self.cache.apply_pending_metadata(product)
+                self.cache.put_product(product)
+            self._request_state.cache_status = "MISS"
+            return res_products
+
         products = {
             product.product_id: product
             for product in self.repository.find_all(filters)

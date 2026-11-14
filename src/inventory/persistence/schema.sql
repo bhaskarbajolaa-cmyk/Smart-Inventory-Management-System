@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at TEXT NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_supplier_id ON products(supplier_id);
+
 CREATE TABLE IF NOT EXISTS roles (
     role_id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_name TEXT NOT NULL UNIQUE,

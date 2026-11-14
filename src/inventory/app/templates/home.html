@@ -92,6 +92,16 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Server-Side Pagination Bar -->
+            <div class="pagination-bar" id="paginationBar" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 13.5px; color: #94a3b8; flex-wrap: wrap; gap: 12px;">
+                <div class="pagination-info" id="paginationInfo">Showing 0 to 0 of 0 items</div>
+                <div class="pagination-actions" style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="btn-page-nav" id="prevPageBtn" style="padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; cursor: pointer; transition: all 0.2s;" disabled>&larr; Previous</button>
+                    <span id="pageIndicator" style="font-weight: 600; color: #f8fafc; padding: 0 8px;">Page 1 of 1</span>
+                    <button type="button" class="btn-page-nav" id="nextPageBtn" style="padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; cursor: pointer; transition: all 0.2s;" disabled>Next &rarr;</button>
+                </div>
+            </div>
         </section>
 
     </main>
@@ -281,6 +291,12 @@
         let suppliers = [];
         let suppliersMap = {};
         let editingRowId = null;
+        let currentPage = 1;
+        const pageSize = 10;
+        let totalPages = 1;
+        let totalItems = 0;
+        let searchDebounceTimer = null;
+        let currentSearchTerm = "";
 
         function getAuthHeaders() {
             const token = localStorage.getItem("smobhar_session_token");
@@ -295,6 +311,45 @@
             toast.style.background = isError ? "#ef4444" : "#10b981";
             toast.style.display = "block";
             setTimeout(() => { toast.style.display = "none"; }, 3500);
+        }
+
+        function updatePaginationControls(p) {
+            const prevBtn = document.getElementById("prevPageBtn");
+            const nextBtn = document.getElementById("nextPageBtn");
+            const pageIndicator = document.getElementById("pageIndicator");
+            const info = document.getElementById("paginationInfo");
+
+            if (!p || p.total_items === 0) {
+                if (info) info.textContent = "No products found";
+                if (pageIndicator) pageIndicator.textContent = "Page 1 of 1";
+                if (prevBtn) {
+                    prevBtn.disabled = true;
+                    prevBtn.style.opacity = "0.4";
+                    prevBtn.style.cursor = "not-allowed";
+                }
+                if (nextBtn) {
+                    nextBtn.disabled = true;
+                    nextBtn.style.opacity = "0.4";
+                    nextBtn.style.cursor = "not-allowed";
+                }
+                return;
+            }
+
+            const startItem = (p.page - 1) * p.page_size + 1;
+            const endItem = Math.min(p.page * p.page_size, p.total_items);
+            if (info) info.textContent = `Showing ${startItem} to ${endItem} of ${p.total_items} items`;
+            if (pageIndicator) pageIndicator.textContent = `Page ${p.page} of ${p.total_pages}`;
+
+            if (prevBtn) {
+                prevBtn.disabled = !p.has_prev;
+                prevBtn.style.opacity = p.has_prev ? "1" : "0.4";
+                prevBtn.style.cursor = p.has_prev ? "pointer" : "not-allowed";
+            }
+            if (nextBtn) {
+                nextBtn.disabled = !p.has_next;
+                nextBtn.style.opacity = p.has_next ? "1" : "0.4";
+                nextBtn.style.cursor = p.has_next ? "pointer" : "not-allowed";
+            }
         }
 
         // 3. Load Suppliers & Products from Backend API
@@ -322,14 +377,41 @@
 
         async function loadProducts() {
             try {
-                const res = await fetch("/api/products", { headers: getAuthHeaders() });
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    page_size: pageSize
+                });
+                if (currentSearchTerm) {
+                    params.set("search_term", currentSearchTerm);
+                }
+                const res = await fetch(`/api/products?${params.toString()}`, { headers: getAuthHeaders() });
                 if (res.status === 401) {
                     localStorage.removeItem("smobhar_session_token");
                     window.location.href = "{{ url_for('login') }}";
                     return;
                 }
                 if (res.ok) {
-                    products = await res.json();
+                    const data = await res.json();
+                    if (Array.isArray(data)) {
+                        products = data;
+                        totalItems = data.length;
+                        totalPages = 1;
+                        updatePaginationControls({
+                            page: 1,
+                            page_size: products.length,
+                            total_items: products.length,
+                            total_pages: 1,
+                            has_next: false,
+                            has_prev: false
+                        });
+                    } else if (data && data.items) {
+                        products = data.items;
+                        const pagination = data.pagination || {};
+                        currentPage = pagination.page || 1;
+                        totalPages = pagination.total_pages || 1;
+                        totalItems = pagination.total_items || 0;
+                        updatePaginationControls(pagination);
+                    }
                     renderTable();
                 } else {
                     const err = await res.json();
@@ -343,25 +425,14 @@
         // 4. Render Table
         function renderTable() {
             const tbody = document.getElementById("inventoryTableBody");
-            const search = document.getElementById("tableSearchInput").value.trim().toLowerCase();
-
             tbody.innerHTML = "";
 
-            const filtered = products.filter(it => {
-                const sName = (suppliersMap[it.supplier_id] || "").toLowerCase();
-                return it.name.toLowerCase().includes(search) ||
-                    it.sku.toLowerCase().includes(search) ||
-                    it.category.toLowerCase().includes(search) ||
-                    sName.includes(search) ||
-                    String(it.supplier_id).includes(search);
-            });
-
-            if (filtered.length === 0) {
+            if (!products || products.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:32px; color:#64748b;">No matching inventory items found. Add a record!</td></tr>`;
                 return;
             }
 
-            filtered.forEach(it => {
+            products.forEach(it => {
                 const tr = document.createElement("tr");
 
                 if (editingRowId === it.product_id) {
@@ -635,8 +706,38 @@
             }
         });
 
-        // 10. Search Input & Auth Guard
-        document.getElementById("tableSearchInput").addEventListener("input", renderTable);
+        // 10. Server-Side Debounced Search & Pagination Listeners
+        const searchInput = document.getElementById("tableSearchInput");
+        if (searchInput) {
+            searchInput.addEventListener("input", (e) => {
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(() => {
+                    currentSearchTerm = e.target.value.trim();
+                    currentPage = 1;
+                    loadProducts();
+                }, 300);
+            });
+        }
+
+        const prevBtn = document.getElementById("prevPageBtn");
+        if (prevBtn) {
+            prevBtn.addEventListener("click", () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadProducts();
+                }
+            });
+        }
+
+        const nextBtn = document.getElementById("nextPageBtn");
+        if (nextBtn) {
+            nextBtn.addEventListener("click", () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    loadProducts();
+                }
+            });
+        }
 
         // Enforce Session Authentication
         (async function initAuth() {
