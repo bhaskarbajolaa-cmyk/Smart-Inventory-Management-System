@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from inventory.persistence.repositories.users import UserRepository
     from inventory.transactions.models import TransactionContext
     from inventory.analytics.service import AnalyticsService
+    from inventory.auth.google_auth import GoogleLoginService
 
 
 @dataclass
@@ -44,3 +45,4 @@ class ApplicationServices:
     scheduler: RequestScheduler
     transaction_context: TransactionContext
     analytics_service: AnalyticsService | None = None
+    google_login: "GoogleLoginService | None" = None

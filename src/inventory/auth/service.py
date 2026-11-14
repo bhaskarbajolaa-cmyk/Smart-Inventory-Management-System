@@ -111,6 +111,20 @@ class Authentication:
             return None
         return session
 
+    def adopt_session(self, session: Session) -> Session:
+        """Register a session authenticated outside this service.
+
+        ``Session.google_token`` verifies an external ID token but cannot add the
+        result to this service's session table. Call this to make the session
+        resolvable by ``get_session`` and therefore usable by the HTTP API.
+        """
+        if session is None or not getattr(session, "session_token", ""):
+            raise ValueError("A session with a non-empty token is required.")
+        if session.is_expired():
+            raise ValueError("Cannot adopt an expired session.")
+        self._sessions[session.session_token] = session
+        return session
+
     def change_password(self, user: User, new_password: str) -> None:
         """Hash the new password and update the authentication record securely."""
         digest = self._hash_password(new_password)

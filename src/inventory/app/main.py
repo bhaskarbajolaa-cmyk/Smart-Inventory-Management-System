@@ -1,9 +1,11 @@
 import argparse
 import atexit
+import logging
 import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from inventory.auth.service import Authentication
 from inventory.concurrency.locks import LockManager
@@ -56,6 +58,20 @@ def _run_seed(database_manager: "DatabaseManager") -> None:
     except Exception as exc:  # noqa: BLE001
         # Seeding is best-effort — never block app startup
         print(f"[seed] Warning: seeder raised {exc!r} — continuing without seed data.")
+
+
+def _build_google_login() -> Any:
+    """Create the Google sign-in client, or None when it is unavailable."""
+    try:
+        from inventory.auth.google_auth import GoogleLoginConfig, GoogleLoginService
+
+        return GoogleLoginService(GoogleLoginConfig.from_environment())
+    except Exception:  # pragma: no cover - optional dependency or bad config
+        logging.getLogger(__name__).warning(
+            "Google sign-in is disabled: the OAuth client could not be configured.",
+            exc_info=True,
+        )
+        return None
 
 
 def build_application() -> ApplicationServices:
@@ -131,6 +147,7 @@ def build_application() -> ApplicationServices:
         scheduler=scheduler,
         transaction_context=transaction_context,
         analytics_service=analytics_service,
+        google_login=_build_google_login(),
     )
     flush_worker.start()
     atexit.register(flush_worker.stop, flush=True)

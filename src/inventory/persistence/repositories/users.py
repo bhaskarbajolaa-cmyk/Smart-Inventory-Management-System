@@ -129,6 +129,19 @@ class UserRepository(Repository[User, object]):
             return None
         return self._row_to_user(rows[0])
 
+    def find_by_email(self, email: str) -> User | None:
+        """Find a user by email (case-insensitive), lowest user_id first."""
+        if not email or not email.strip():
+            return None
+        rows = self.db.execute_query(
+            "SELECT user_id, username, email, role_id, created_at "
+            "FROM users WHERE LOWER(email) = LOWER(?) ORDER BY user_id ASC",
+            (email,),
+        )
+        if not rows:
+            return None
+        return self._row_to_user(rows[0])
+
     def find_credentials_by_username(self, username: str) -> UserCredentials | None:
         """Fetch the stored password hash for a given username.
 

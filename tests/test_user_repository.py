@@ -2,6 +2,7 @@
 
 import unittest
 from datetime import datetime
+from unittest.mock import patch
 
 from inventory.auth.models import User, UserCredentials
 from inventory.auth.service import Authentication
@@ -213,6 +214,92 @@ class TestAuthenticationWithRealRepository(unittest.TestCase):
         duplicate = _make_user(username="alice")
         with self.assertRaises(Exception):
             self.repo.save(duplicate)
+
+
+class TestUserRepositoryFindByEmail(unittest.TestCase):
+    """Verify find_by_email lookup semantics against a real SQLite DB."""
+
+    def setUp(self) -> None:
+        DatabaseManager.reset_instance()
+        self.db = _make_db()
+        self.repo = UserRepository(self.db)
+        # Insert a role row so FK constraint on users.role_id is satisfied
+        self.db.execute_query(
+            "INSERT INTO roles (role_id, role_name, created_by, is_system_default, default_job_priority) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (2, "Staff", None, 0, 3),
+        )
+
+    def tearDown(self) -> None:
+        self.db.close()
+        DatabaseManager.reset_instance()
+
+    # ------------------------------------------------------------------
+    # find_by_email
+    # ------------------------------------------------------------------
+    def test_find_by_email_exact_match(self) -> None:
+        saved = self.repo.save(_make_user(username="alice"))
+        found = self.repo.find_by_email("alice@example.com")
+        self.assertIsNotNone(found)
+        assert found is not None
+        self.assertEqual(found.user_id, saved.user_id)
+        self.assertEqual(found.username, "alice")
+
+    def test_find_by_email_case_insensitive(self) -> None:
+        saved = self.repo.save(_make_user(username="Alice"))
+        found = self.repo.find_by_email("ALICE@EXAMPLE.COM")
+        self.assertIsNotNone(found)
+        assert found is not None
+        self.assertEqual(found.user_id, saved.user_id)
+
+    def test_find_by_email_unknown_returns_none(self) -> None:
+        self.repo.save(_make_user(username="alice"))
+        self.assertIsNone(self.repo.find_by_email("ghost@example.com"))
+
+    def test_find_by_email_blank_returns_none_without_query(self) -> None:
+        self.repo.save(_make_user(username="alice"))
+        with patch.object(
+            self.db, "execute_query", wraps=self.db.execute_query
+        ) as spy:
+            self.assertIsNone(self.repo.find_by_email(""))
+            self.assertIsNone(self.repo.find_by_email("   "))
+        self.assertEqual(spy.call_count, 0, "blank email must not hit the database")
+
+    def test_find_by_email_duplicates_return_lowest_user_id(self) -> None:
+        # Schema does not enforce email uniqueness, so duplicates are inserted
+        # directly through the repository with distinct usernames. They are
+        # inserted higher user_id first to prove the lowest one is chosen.
+        high = _make_user(user_id=50, username="dup_high")
+        high.email = "shared@example.com"
+        saved_high = self.repo.save(high)
+
+        low = _make_user(user_id=10, username="dup_low")
+        low.email = "shared@example.com"
+        saved_low = self.repo.save(low)
+
+        self.assertEqual(
+            len(self.repo.find_all()), 2, "both duplicate email rows must exist"
+        )
+        self.assertGreater(saved_high.user_id, saved_low.user_id)
+
+        found = self.repo.find_by_email("shared@example.com")
+        self.assertIsNotNone(found)
+        assert found is not None
+        self.assertEqual(found.user_id, 10)
+        self.assertEqual(found.username, "dup_low")
+
+    def test_find_by_email_query_is_parameterised_and_ordered(self) -> None:
+        # SQLite scans rowid tables in key order, so the row-level assertions
+        # above cannot detect a missing ORDER BY. Check the statement itself.
+        self.repo.save(_make_user(username="alice"))
+        with patch.object(
+            self.db, "execute_query", wraps=self.db.execute_query
+        ) as spy:
+            self.repo.find_by_email("alice@example.com")
+        sql = spy.call_args.args[0]
+        self.assertIn("LOWER(email) = LOWER(?)", sql)
+        self.assertIn("ORDER BY user_id ASC", sql)
+        self.assertNotIn("alice@example.com", sql, "email must be bound, not inlined")
 
 
 if __name__ == "__main__":

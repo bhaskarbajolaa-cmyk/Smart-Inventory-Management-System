@@ -5,12 +5,14 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import secrets
 import threading
 from collections import deque
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 import time
+import urllib.parse
 from typing import Any
 
 from inventory.access_control.models import Permission, Role, TableAccessGrant
@@ -77,7 +79,7 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         services = build_application()
 
     import os
-    from flask import Flask, abort, jsonify, request
+    from flask import Flask, abort, jsonify, make_response, redirect, request
 
     # Resolve templates/ and static/ relative to this file (src/inventory/app/)
     _here = os.path.dirname(os.path.abspath(__file__))
@@ -89,6 +91,10 @@ def create_app(services: ApplicationServices | None = None) -> Any:
     )
     request_metrics = RequestMetrics()
     app.extensions["request_metrics"] = request_metrics
+    app.extensions["services"] = services
+    app.config["SESSION_COOKIE_SECURE"] = os.environ.get(
+        "SESSION_COOKIE_SECURE", ""
+    ).strip().lower() in {"1", "true", "yes", "on"}
 
     @app.before_request
     def count_application_request() -> None:
@@ -100,7 +106,7 @@ def create_app(services: ApplicationServices | None = None) -> Any:
             request_metrics.record()
 
     # Register frontend page routes
-    from inventory.app.web import register_page_routes
+    from inventory.app.web import SESSION_COOKIE, register_page_routes
     register_page_routes(app)
 
     from werkzeug.exceptions import HTTPException
@@ -144,6 +150,22 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         if not user.has_permission(code, role):
             abort(403, description=f"Permission {code} is required for {table_name}.")
         return user, role
+
+    def set_session_cookie(response: Any, token: str) -> Any:
+        """Attach the HttpOnly session cookie used by the server-side page guards.
+
+        The cookie is never accepted as API authentication: API routes still
+        require the Bearer header, so a cross-site request cannot ride on it.
+        """
+        response.set_cookie(
+            SESSION_COOKIE,
+            token,
+            httponly=True,
+            samesite="Lax",
+            secure=bool(app.config.get("SESSION_COOKIE_SECURE", False)),
+            path="/",
+        )
+        return response
 
     def product_payload(product: Any) -> dict[str, Any]:
         return {
@@ -651,7 +673,7 @@ def create_app(services: ApplicationServices | None = None) -> Any:
         except PermissionError:
             abort(401, description="Invalid username or password.")
 
-        return jsonify(
+        response = jsonify(
             {
                 "session_token": session.session_token,
                 "user_id": session.user_id,
@@ -659,12 +681,182 @@ def create_app(services: ApplicationServices | None = None) -> Any:
                 "expires_at": session.expires_at.isoformat(),
             }
         )
+        return set_session_cookie(response, session.session_token)
+
+    # ------------------------------------------------------------------
+    # Google / OpenID Connect sign-in
+    # ------------------------------------------------------------------
+
+    def google_login_service() -> Any:
+        """Return the configured Google client, or fail with 503."""
+        service = getattr(services, "google_login", None)
+        if service is None:
+            abort(503, description="Google sign-in is not configured on this server.")
+        return service
+
+    def google_login_redirect(*, session: Session | None = None, error: str = "") -> Any:
+        """Send the browser back to the login page with a fragment payload.
+
+        A fragment is used deliberately: it never reaches the server, never
+        appears in a Referer header, and the login page clears it immediately.
+        """
+        params: dict[str, str] = {}
+        if session is not None:
+            params["session_token"] = session.session_token
+        if error:
+            params["error"] = error
+        target = "/login"
+        if params:
+            target = "/login#" + urllib.parse.urlencode(params)
+        response = redirect(target, code=302)
+        response.headers["Cache-Control"] = "no-store"
+        response.delete_cookie("google_oauth_state", path="/api/auth/google")
+        if session is not None:
+            set_session_cookie(response, session.session_token)
+        return response
+
+    def unique_username(email: str) -> str:
+        """Derive a free local username from an email address."""
+        base = re.sub(r"[^a-z0-9._-]+", "", (email.split("@")[0] or "").lower())
+        base = base or "google-user"
+        candidate = base
+        for suffix in range(2, 100):
+            if services.user_repository.find_by_username(candidate) is None:
+                return candidate
+            candidate = f"{base}{suffix}"
+        return f"{base}-{int(time.time())}"
+
+    def resolve_google_user(identity: Any, login_service: Any) -> User:
+        """Link a verified Google identity to a local account.
+
+        Existing accounts are matched by email. Unknown identities are
+        provisioned with the least-privileged role unless auto-provisioning is
+        disabled; a token never grants a role that the local database does not
+        already assign.
+        """
+        if not identity.email:
+            raise LookupError("The Google identity has no email address.")
+        user = services.user_repository.find_by_email(identity.email)
+        if user is not None:
+            return user
+        if not login_service.config.auto_provision:
+            raise LookupError(f"No local account is linked to {identity.email}.")
+
+        role_id = login_service.config.default_role_id
+        if services.role_repository.find_by_id(role_id) is None:
+            role_id = 3
+        created = User(
+            user_id=0,
+            username=unique_username(identity.email),
+            email=identity.email,
+            role_id=role_id,
+            created_at=datetime.now(),
+        )
+        return services.user_repository.save(created)
+
+    def google_redirect_uri(service: Any) -> str:
+        """Keep the callback on the host the browser is actually using.
+
+        The registered redirect URI pins one host. When the app is opened via a
+        different spelling of the same machine (``localhost`` instead of
+        ``127.0.0.1``) the state cookie would be dropped at the callback, so the
+        URI is rebuilt from the request host (same path, same scheme).
+        """
+        configured = service.config.redirect_uri
+        parts = urllib.parse.urlsplit(configured)
+        if request.host == parts.netloc:
+            return configured
+        return urllib.parse.urlunsplit(
+            (request.scheme, request.host, parts.path, "", "")
+        )
+
+    @app.get("/api/auth/google/start")
+    def google_login_start() -> Any:
+        """Begin the authorization-code flow at the identity provider."""
+        service = google_login_service()
+        try:
+            authorize_url, state = service.start(
+                return_to=request.args.get("return_to", ""),
+                redirect_uri=google_redirect_uri(service),
+            )
+        except Exception:
+            app.logger.exception("Could not start the Google authorization request")
+            abort(502, description="Google sign-in is temporarily unavailable.")
+        response = redirect(authorize_url, code=302)
+        response.headers["Cache-Control"] = "no-store"
+        # Bind the state to this browser so a third party cannot replay a
+        # callback URL into someone else's session (login CSRF).
+        response.set_cookie(
+            "google_oauth_state",
+            state,
+            max_age=300,
+            httponly=True,
+            samesite="Lax",
+            secure=request.is_secure,
+            path="/api/auth/google",
+        )
+        return response
+
+    @app.get("/api/auth/google/callback")
+    def google_login_callback() -> Any:
+        """Exchange the code, verify the ID token, and adopt a session."""
+        service = google_login_service()
+        from inventory.auth.google import GoogleTokenError
+        from inventory.auth.google_auth import GoogleLoginError
+
+        if request.args.get("error"):
+            return google_login_redirect(error="Google sign-in was cancelled.")
+
+        state = request.args.get("state", "")
+        code = request.args.get("code", "")
+        if not state or not code:
+            return google_login_redirect(error="The Google response was incomplete.")
+
+        expected_state = request.cookies.get("google_oauth_state", "")
+        if not expected_state or not secrets.compare_digest(expected_state, state):
+            return google_login_redirect(
+                error="The sign-in request expired or did not start in this browser."
+            )
+
+        try:
+            result = service.complete(state, code)
+        except GoogleLoginError as error:
+            app.logger.warning("Google sign-in failed: %s", error)
+            return google_login_redirect(error=str(error))
+
+        try:
+            user = resolve_google_user(result.identity, service)
+            session = Session.google_token(
+                result.id_token,
+                verifier=service.verifier,
+                user_resolver=lambda _identity: user,
+            )
+        except LookupError as error:
+            app.logger.info("Google sign-in rejected: %s", error)
+            return google_login_redirect(error=str(error))
+        except GoogleTokenError:
+            app.logger.exception("Google ID token rejected after the code exchange")
+            return google_login_redirect(error="The Google token could not be verified.")
+
+        services.authentication.adopt_session(session)
+        return google_login_redirect(session=session)
 
     @app.post("/api/auth/logout")
     def logout() -> Any:
-        session = require_session()
-        services.authentication.logout(session)
-        return "", 204
+        """Invalidate the presented session and clear the page cookie."""
+        header = request.headers.get("Authorization", "")
+        scheme, _, header_token = header.partition(" ")
+        token = header_token if scheme.lower() == "bearer" and header_token else ""
+        token = token or request.cookies.get(SESSION_COOKIE, "")
+
+        if token:
+            session = services.authentication.get_session(token)
+            if session is not None:
+                services.authentication.logout(session)
+
+        response = make_response("", 204)
+        response.delete_cookie(SESSION_COOKIE, path="/")
+        return response
 
     @app.get("/api/auth/me")
     def current_user() -> Any:
@@ -688,6 +880,7 @@ def create_app(services: ApplicationServices | None = None) -> Any:
             {
                 "user_id": user.user_id,
                 "username": user.username,
+                "email": user.email,
                 "role_id": user.role_id,
                 "role_name": role.role_name,
                 "permissions": codes,
@@ -949,6 +1142,7 @@ def create_app(services: ApplicationServices | None = None) -> Any:
 
     @app.post("/api/cache/benchmark")
     def benchmark_cache() -> Any:
+        require_permission("EDIT", "products")
         payload = request.get_json(silent=True)
         if not isinstance(payload, dict):
             abort(400, description="Expected a JSON object.")

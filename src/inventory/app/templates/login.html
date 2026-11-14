@@ -261,6 +261,27 @@
             pwd.type = pwd.type === "password" ? "text" : "password";
         });
 
+        // Adopt the #session_token / #error fragment handed back by the OAuth callback
+        (function adoptAuthFragment() {
+            if (!window.location.hash || window.location.hash.length < 2) return;
+
+            const params = new URLSearchParams(window.location.hash.slice(1));
+            const sessionToken = params.get("session_token");
+            const errorMessage = params.get("error");
+
+            if (sessionToken) {
+                localStorage.setItem("smobhar_session_token", sessionToken);
+                localStorage.setItem("token", sessionToken);
+            }
+
+            if (errorMessage && typeof showMessage === "function") {
+                showMessage(errorMessage, "error");
+            }
+
+            // Drop the fragment so the token does not linger in the address bar or history.
+            history.replaceState(null, "", window.location.pathname + window.location.search);
+        })();
+
         // Auto-redirect if session is active
         (async function checkExistingSession() {
             const token = localStorage.getItem("smobhar_session_token");
@@ -352,7 +373,7 @@
         });
 
         document.getElementById("googleButton").addEventListener("click", () => {
-            showMessage("Google OAuth is unavailable in demo mode.", "info");
+            window.location.assign("/api/auth/google/start");
         });
 
         /* Modal Logic */

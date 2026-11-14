@@ -17,9 +17,11 @@ dependencies = [
 [project.scripts]
 inventory-system = "inventory.app.main:main"
 inventory-server = "inventory.app.server:main"
+inventory-auth-server = "inventory.auth_server.app:main"
 
 [project.optional-dependencies]
 web = ["Flask>=3.0"]
+oauth = ["Flask>=3.0", "PyJWT[crypto]>=2.8"]
 dev = ["pytest>=8.0"]
 
 [tool.setuptools.packages.find]

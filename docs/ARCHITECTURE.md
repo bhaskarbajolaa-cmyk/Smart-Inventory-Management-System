@@ -42,13 +42,13 @@ python scripts/stress_test.py --transactions 1000 --workers 10 --mode sale
 The stress test creates a temporary SQLite database and uses an in-memory cache;
 it does not alter the configured application database or require Upstash.
 
-The public `/cache-demo` page compares cumulative database-only and cache-path
+The `/cache-demo` page compares cumulative database-only and cache-path
 read times and estimates break-even for repeated reads. Its separate
 `/cache-traffic` page polls live request metrics every two seconds and graphs
 dynamic application requests over the previous minute. Metrics are in-process
 and are not aggregated across multiple workers or instances. Both routes are
-unlinked from the main application navigation, but public and unprotected; URL
-secrecy is not authentication.
+unlinked from the main navigation and require an administrator session; the
+metrics remain in-process and are not aggregated.
 
 The custom-table models and repository are isolated in `custom_tables/` and are stretch-only. The eventual request/transaction flow should acquire the product lock, execute the stock change through the transaction/repository path, commit or roll back, and release the lock in a `finally` block.
 

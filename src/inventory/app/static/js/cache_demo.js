@@ -195,10 +195,14 @@
         showMessage("Running read-only measurements; larger runs can take several seconds…");
         results.hidden = true;
         try {
+            const token = localStorage.getItem("smobhar_session_token")
+                || localStorage.getItem("token")
+                || "";
             const response = await fetch("/api/cache/benchmark", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
                 },
                 body: JSON.stringify({
                     iterations: Number(iterationsInput.value),

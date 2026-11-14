@@ -63,8 +63,8 @@ build does not need to connect to Aiven.
 
 The cache demo remains separate from the home-page navigation and login flow.
 Visit `/cache-demo` for the performance comparison and `/cache-traffic` for a
-live request monitor that refreshes every two seconds. Both routes are public
-and unauthenticated, so treat them as demos rather than private admin tools.
+live request monitor that refreshes every two seconds. Both routes now require an administrator session; anonymous visitors are
+redirected to the login page.
 Traffic metrics count dynamic requests within the current server process and
 are not aggregated across multiple workers or instances. Never commit or paste
 connection URLs containing passwords into source control.

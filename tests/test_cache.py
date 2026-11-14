@@ -206,6 +206,7 @@ class InventoryCacheTests(unittest.TestCase):
         )
         response = create_app(services).test_client().post(
             "/api/cache/benchmark",
+            headers={"Authorization": "Bearer test-token"},
             json={
                 "iterations": 10,
             },
@@ -255,8 +256,26 @@ class InventoryCacheTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def _page_client(self):
+        session = SimpleNamespace(
+            user_id=1, is_expired=lambda: False, session_token="page-token"
+        )
+        user = SimpleNamespace(
+            user_id=1, role_id=1, has_permission=lambda _code, _role: True
+        )
+        services = SimpleNamespace(
+            authentication=SimpleNamespace(
+                get_session=lambda token: session if token == "page-token" else None
+            ),
+            user_repository=SimpleNamespace(find_by_id=lambda _user_id: user),
+            role_repository=SimpleNamespace(find_by_id=lambda _role_id: object()),
+        )
+        client = create_app(services).test_client()
+        client.set_cookie("smobhar_session_token", "page-token")
+        return client
+
     def test_cache_demo_page_is_registered(self) -> None:
-        client = create_app(SimpleNamespace()).test_client()
+        client = self._page_client()
         response = client.get("/cache-demo")
         traffic_page = client.get("/cache-traffic")
         home = client.get("/home")
