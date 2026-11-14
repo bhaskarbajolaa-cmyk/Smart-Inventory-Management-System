@@ -33,6 +33,8 @@
                     <a href="{{ url_for('about') }}" class="active">About Us</a>
                     <a href="{{ url_for('home') }}">Inventory Table</a>
                     <a href="{{ url_for('workspace') }}">Workspace</a>
+                    <a href="{{ url_for('analytics_page') }}">Analytics &amp; Intelligence</a>
+                    <a href="{{ url_for('admin') }}" id="navAdminLink" style="display: none;">Admin Panel</a>
                 </nav>
 
                 <button type="button" class="logout-btn" id="logoutBtn">Log out</button>
@@ -210,6 +212,25 @@
             requestAnimationFrame(animateWater);
         }
         animateWater();
+
+        // Auth init: verify session, set permissions, show admin link
+        (async function initAuth() {
+            const token = localStorage.getItem("smobhar_session_token");
+            if (!token) { window.location.href = "{{ url_for('login') }}"; return; }
+            try {
+                const res = await fetch("/api/auth/me", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                if (res.status === 401) { window.location.href = "{{ url_for('login') }}"; return; }
+                const user = await res.json();
+                window.__permissions = new Set(user.permissions || []);
+                window.__user = user;
+                if (user.role_id === 1) {
+                    const adminLink = document.getElementById("navAdminLink");
+                    if (adminLink) adminLink.style.display = "inline-block";
+                }
+            } catch (_) { window.location.href = "{{ url_for('login') }}"; }
+        })();
 
         // Logout Action
         document.getElementById("logoutBtn").addEventListener("click", () => {

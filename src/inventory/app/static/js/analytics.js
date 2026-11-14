@@ -46,25 +46,30 @@ document.addEventListener("DOMContentLoaded", () => {
         return num.toLocaleString("en-IN");
     };
 
-    // Check user role for admin link
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    // Auth init: verify live session, store permissions, show admin link
+    (async function initAuth() {
         try {
-            const userObj = JSON.parse(storedUser);
-            if (userObj.role_id === 1) {
+            const res = await fetch("/api/auth/me", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.status === 401) { window.location.href = "/login"; return; }
+            const user = await res.json();
+            window.__permissions = new Set(user.permissions || []);
+            window.__user = user;
+            if (user.role_id === 1) {
                 const navAdmin = document.getElementById("navAdminLink");
                 if (navAdmin) navAdmin.style.display = "inline-block";
             }
         } catch (_) {}
-    }
+    })();
 
     // Logout
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", () => {
+            localStorage.removeItem("smobhar_session_token");
             localStorage.removeItem("token");
             localStorage.removeItem("user");
-            localStorage.removeItem("smobhar_session_token");
             window.location.href = "/login";
         });
     }
